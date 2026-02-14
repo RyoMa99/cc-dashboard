@@ -1,0 +1,9 @@
+name = "cc-dashboard"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cc-dashboard-db"
+database_id = "local"
+migrations_dir = "migrations"
