@@ -10,8 +10,8 @@ export const bearerAuth = createMiddleware<{ Bindings: Bindings }>(
 			return c.json({ error: "Missing Authorization header" }, 401);
 		}
 
-		const token = authHeader.replace(/^Bearer\s+/i, "");
-		if (token !== c.env.AUTH_TOKEN) {
+		const match = authHeader.match(/^Bearer\s+(.+)$/i);
+		if (!match || match[1] !== c.env.AUTH_TOKEN) {
 			return c.json({ error: "Invalid token" }, 401);
 		}
 
