@@ -43,3 +43,7 @@ xh --ignore-stdin POST http://localhost:{port}/v1/metrics Authorization:"Bearer 
 ### ダッシュボード目視確認（chrome-devtools MCP）
 
 chrome-devtools MCP でダッシュボードページを開き、フルページスクリーンショットを撮ってレイアウト崩れがないか確認する。
+
+## プラン管理
+
+実装計画は `docs/plan/` にバージョン付きで保存する（例: `v0.1.md`, `v0.1.1.md`）。
