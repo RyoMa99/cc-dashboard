@@ -5,7 +5,6 @@ import { Layout } from "../components/Layout";
 import { Overview } from "../components/Overview";
 import { RecentSessions } from "../components/RecentSessions";
 import { ToolUsage } from "../components/ToolUsage";
-import { dashboardAuth } from "../middleware/auth";
 import {
 	getDailyCosts,
 	getDailyTokens,
@@ -16,8 +15,6 @@ import {
 import type { Bindings } from "../types/env";
 
 const dashboard = new Hono<{ Bindings: Bindings }>();
-
-dashboard.use("/*", dashboardAuth);
 
 dashboard.get("/", async (c) => {
 	const [stats, dailyCosts, dailyTokens, toolUsage, sessions] =
