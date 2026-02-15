@@ -16,10 +16,10 @@ function Card({
 	sub,
 }: { label: string; value: string; sub?: string }) {
 	return (
-		<div class="bg-white rounded-lg border border-gray-200 p-4">
-			<p class="text-sm text-gray-500">{label}</p>
+		<div class="bg-gray-900 rounded-lg border border-gray-700 p-4">
+			<p class="text-sm text-gray-400">{label}</p>
 			<p class="text-2xl font-bold mt-1">{value}</p>
-			{sub && <p class="text-xs text-gray-400 mt-1">{sub}</p>}
+			{sub && <p class="text-xs text-gray-500 mt-1">{sub}</p>}
 		</div>
 	);
 }

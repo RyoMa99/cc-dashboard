@@ -11,7 +11,7 @@ export function DailyTokens({ rows }: { rows: DailyTokenRow[] }) {
 		return (
 			<section>
 				<h2 class="text-lg font-semibold mb-3">Daily Token Usage</h2>
-				<p class="text-gray-500 text-sm">No token data yet.</p>
+				<p class="text-gray-400 text-sm">No token data yet.</p>
 			</section>
 		);
 	}
@@ -20,9 +20,9 @@ export function DailyTokens({ rows }: { rows: DailyTokenRow[] }) {
 		<section>
 			<h2 class="text-lg font-semibold mb-3">Daily Token Usage</h2>
 			<div class="overflow-x-auto">
-				<table class="w-full bg-white border border-gray-200 rounded-lg text-sm">
+				<table class="w-full bg-gray-900 border border-gray-700 rounded-lg text-sm">
 					<thead>
-						<tr class="bg-gray-50 border-b border-gray-200">
+						<tr class="bg-gray-800 border-b border-gray-700">
 							<th class="text-left px-4 py-2 font-medium">Date</th>
 							<th class="text-right px-4 py-2 font-medium">Input</th>
 							<th class="text-right px-4 py-2 font-medium">Output</th>
@@ -39,7 +39,7 @@ export function DailyTokens({ rows }: { rows: DailyTokenRow[] }) {
 								r.cacheReadTokens +
 								r.cacheCreationTokens;
 							return (
-								<tr key={r.date} class="border-b border-gray-100">
+								<tr key={r.date} class="border-b border-gray-800">
 									<td class="px-4 py-2">{r.date}</td>
 									<td class="px-4 py-2 text-right">
 										{formatTokens(r.inputTokens)}
