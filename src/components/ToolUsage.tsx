@@ -1,4 +1,5 @@
 import type { ToolUsageRow } from "../queries/dashboard";
+import { ToolUsageChart } from "./charts/ToolUsageChart";
 
 export function ToolUsage({ tools }: { tools: ToolUsageRow[] }) {
 	if (tools.length === 0) {
@@ -13,6 +14,7 @@ export function ToolUsage({ tools }: { tools: ToolUsageRow[] }) {
 	return (
 		<section>
 			<h2 class="text-lg font-semibold mb-3">Tool Usage</h2>
+			<ToolUsageChart tools={tools} />
 			<div class="overflow-x-auto">
 				<table class="w-full bg-gray-900 border border-gray-700 rounded-lg text-sm">
 					<thead>

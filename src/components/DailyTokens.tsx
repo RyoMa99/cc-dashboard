@@ -1,4 +1,5 @@
 import type { DailyTokenRow } from "../queries/dashboard";
+import { DailyTokenChart } from "./charts/DailyTokenChart";
 
 function formatTokens(n: number): string {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -19,6 +20,7 @@ export function DailyTokens({ rows }: { rows: DailyTokenRow[] }) {
 	return (
 		<section>
 			<h2 class="text-lg font-semibold mb-3">Daily Token Usage</h2>
+			<DailyTokenChart rows={rows} />
 			<div class="overflow-x-auto">
 				<table class="w-full bg-gray-900 border border-gray-700 rounded-lg text-sm">
 					<thead>

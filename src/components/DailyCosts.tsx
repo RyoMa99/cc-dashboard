@@ -1,4 +1,5 @@
 import type { DailyCostRow } from "../queries/dashboard";
+import { DailyCostChart } from "./charts/DailyCostChart";
 
 function formatCost(usd: number): string {
 	return `$${usd.toFixed(4)}`;
@@ -17,6 +18,7 @@ export function DailyCosts({ rows }: { rows: DailyCostRow[] }) {
 	return (
 		<section>
 			<h2 class="text-lg font-semibold mb-3">Daily Costs by Model</h2>
+			<DailyCostChart rows={rows} />
 			<div class="overflow-x-auto">
 				<table class="w-full bg-gray-900 border border-gray-700 rounded-lg text-sm">
 					<thead>
