@@ -2,6 +2,7 @@
   "name": "cc-dashboard",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.29.3",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
@@ -15,6 +16,13 @@
   },
   "dependencies": {
     "hono": "^4.7.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "esbuild",
+      "workerd"
+    ]
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
