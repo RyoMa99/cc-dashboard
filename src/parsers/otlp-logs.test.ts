@@ -326,7 +326,12 @@ describe("parseLogsPayload", () => {
 				resourceLogs: [
 					{
 						resource: {
-							attributes: [{ key: "session.id", value: { stringValue: "s1" } }],
+							attributes: [
+								{
+									key: "repository",
+									value: { stringValue: "my-repo" },
+								},
+							],
 						},
 						scopeLogs: [
 							{
@@ -337,6 +342,10 @@ describe("parseLogsPayload", () => {
 											{
 												key: "event.name",
 												value: { stringValue: "api_request" },
+											},
+											{
+												key: "session.id",
+												value: { stringValue: "s1" },
 											},
 											{
 												key: "model",
@@ -350,6 +359,10 @@ describe("parseLogsPayload", () => {
 											{
 												key: "event.name",
 												value: { stringValue: "tool_result" },
+											},
+											{
+												key: "session.id",
+												value: { stringValue: "s1" },
 											},
 											{
 												key: "tool_name",
@@ -368,6 +381,9 @@ describe("parseLogsPayload", () => {
 			expect(result.events).toHaveLength(2);
 			expect(result.events[0].type).toBe("api_request");
 			expect(result.events[1].type).toBe("tool_result");
+			expect(result.resourceContexts).toHaveLength(2);
+			expect(result.resourceContexts[0].repository).toBe("my-repo");
+			expect(result.resourceContexts[0].sessionId).toBe("s1");
 		});
 	});
 });

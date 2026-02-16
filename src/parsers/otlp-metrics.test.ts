@@ -9,7 +9,14 @@ describe("parseMetricsPayload", () => {
 				{
 					resource: {
 						attributes: [
-							{ key: "session.id", value: { stringValue: "sess-001" } },
+							{
+								key: "repository",
+								value: { stringValue: "cc-dashboard" },
+							},
+							{
+								key: "service.name",
+								value: { stringValue: "claude-code" },
+							},
 						],
 					},
 					scopeMetrics: [
@@ -22,6 +29,10 @@ describe("parseMetricsPayload", () => {
 										dataPoints: [
 											{
 												attributes: [
+													{
+														key: "session.id",
+														value: { stringValue: "sess-001" },
+													},
 													{ key: "type", value: { stringValue: "input" } },
 													{
 														key: "model",
@@ -54,7 +65,7 @@ describe("parseMetricsPayload", () => {
 		expect(points[0].timestampMs).toBe(1700000000000);
 	});
 
-	it("Gauge メトリクスをパースする", () => {
+	it("active_time.total を Sum メトリクスとしてパースする", () => {
 		const payload: ExportMetricsServiceRequest = {
 			resourceMetrics: [
 				{
@@ -63,9 +74,22 @@ describe("parseMetricsPayload", () => {
 							metrics: [
 								{
 									name: "claude_code.active_time.total",
-									gauge: {
+									unit: "s",
+									sum: {
+										aggregationTemporality: 1,
+										isMonotonic: true,
 										dataPoints: [
 											{
+												attributes: [
+													{
+														key: "session.id",
+														value: { stringValue: "sess-001" },
+													},
+													{
+														key: "type",
+														value: { stringValue: "cli" },
+													},
+												],
 												timeUnixNano: "1700000000000000000",
 												asDouble: 120.5,
 											},
@@ -83,7 +107,8 @@ describe("parseMetricsPayload", () => {
 		expect(points).toHaveLength(1);
 		expect(points[0].metricName).toBe("claude_code.active_time.total");
 		expect(points[0].value).toBe(120.5);
-		expect(points[0].sessionId).toBeNull();
+		expect(points[0].sessionId).toBe("sess-001");
+		expect(points[0].attrType).toBe("cli");
 	});
 
 	it("複数メトリクス・複数 dataPoints をパースする", () => {

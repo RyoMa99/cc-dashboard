@@ -63,3 +63,19 @@ xh --ignore-stdin POST http://localhost:{port}/v1/metrics Authorization:"Bearer 
 ### ダッシュボード目視確認（chrome-devtools MCP）
 
 chrome-devtools MCP でダッシュボードページを開き、フルページスクリーンショットを撮ってレイアウト崩れがないか確認する。
+
+## OTLP ペイロード構造
+
+Claude Code が送信する OTLP データは、`session.id` と `OTEL_RESOURCE_ATTRIBUTES` 由来の属性が**異なる階層**に配置される。
+
+```
+resourceLogs[]:
+  resource:
+    attributes: [repository, os.type, service.name, ...]  ← OTEL_RESOURCE_ATTRIBUTES 由来
+  scopeLogs[]:
+    logRecords[]:
+      attributes: [session.id, event.name, model, ...]    ← イベント固有
+```
+
+- `repository` は resource-level、`session.id` は record-level
+- パーサーで両者を紐づける際は、各 log record の session ID を使うこと（resource-level に session.id は存在しない）
