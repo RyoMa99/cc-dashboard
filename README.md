@@ -211,6 +211,24 @@ AUTH_TOKEN=dummy
 }
 ```
 
+### リポジトリ別フィルタの設定
+
+ダッシュボードはリポジトリ別にコストやセッションをフィルタできる。Claude Code は `repository` 属性を自動送信しないため、プロジェクトごとに `OTEL_RESOURCE_ATTRIBUTES` で明示的に設定する必要がある。
+
+各プロジェクトの `.claude/settings.json` に追加:
+
+```json
+{
+  "env": {
+    "OTEL_RESOURCE_ATTRIBUTES": "repository=<リポジトリ名>"
+  }
+}
+```
+
+- `repository` の値はダッシュボードのフィルタドロップダウンに表示される
+- 設定しない場合、セッションの `repository` は空になりフィルタで「(未設定)」として扱われる
+- グローバル設定（`~/.claude/settings.json`）ではなくプロジェクトごとの設定（`.claude/settings.json`）を使う
+
 ### デプロイ
 
 ```bash
