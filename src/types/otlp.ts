@@ -17,6 +17,7 @@ export type KeyValue = {
 
 export type Resource = {
 	attributes?: KeyValue[];
+	droppedAttributesCount?: number;
 };
 
 // --- Logs ---
@@ -28,6 +29,7 @@ export type LogRecord = {
 	severityText?: string;
 	body?: AnyValue;
 	attributes?: KeyValue[];
+	droppedAttributesCount?: number;
 	traceId?: string;
 	spanId?: string;
 };

@@ -28,17 +28,16 @@ describe("POST /v1/logs", () => {
 		const payload: ExportLogsServiceRequest = {
 			resourceLogs: [
 				{
-					resource: {
-						attributes: [
-							{ key: "session.id", value: { stringValue: "otlp-test-s1" } },
-						],
-					},
 					scopeLogs: [
 						{
 							logRecords: [
 								{
 									timeUnixNano: "1700000000000000000",
 									attributes: [
+										{
+											key: "session.id",
+											value: { stringValue: "otlp-test-s1" },
+										},
 										{
 											key: "event.name",
 											value: { stringValue: "api_request" },
@@ -127,17 +126,16 @@ describe("POST /v1/logs", () => {
 		const payload: ExportLogsServiceRequest = {
 			resourceLogs: [
 				{
-					resource: {
-						attributes: [
-							{ key: "session.id", value: { stringValue: "otlp-up-1" } },
-						],
-					},
 					scopeLogs: [
 						{
 							logRecords: [
 								{
 									timeUnixNano: "1700000000000000000",
 									attributes: [
+										{
+											key: "session.id",
+											value: { stringValue: "otlp-up-1" },
+										},
 										{
 											key: "event.name",
 											value: { stringValue: "user_prompt" },
@@ -170,17 +168,16 @@ describe("POST /v1/logs", () => {
 		const payload: ExportLogsServiceRequest = {
 			resourceLogs: [
 				{
-					resource: {
-						attributes: [
-							{ key: "session.id", value: { stringValue: "otlp-td-1" } },
-						],
-					},
 					scopeLogs: [
 						{
 							logRecords: [
 								{
 									timeUnixNano: "1700000000000000000",
 									attributes: [
+										{
+											key: "session.id",
+											value: { stringValue: "otlp-td-1" },
+										},
 										{
 											key: "event.name",
 											value: { stringValue: "tool_decision" },
@@ -215,17 +212,16 @@ describe("POST /v1/logs", () => {
 		const payload: ExportLogsServiceRequest = {
 			resourceLogs: [
 				{
-					resource: {
-						attributes: [
-							{ key: "session.id", value: { stringValue: "otlp-tp-1" } },
-						],
-					},
 					scopeLogs: [
 						{
 							logRecords: [
 								{
 									timeUnixNano: "1700000000000000000",
 									attributes: [
+										{
+											key: "session.id",
+											value: { stringValue: "otlp-tp-1" },
+										},
 										{
 											key: "event.name",
 											value: { stringValue: "tool_result" },
@@ -262,7 +258,6 @@ describe("POST /v1/logs", () => {
 				{
 					resource: {
 						attributes: [
-							{ key: "session.id", value: { stringValue: "otlp-repo-1" } },
 							{ key: "repository", value: { stringValue: "cc-dashboard" } },
 						],
 					},
@@ -272,6 +267,10 @@ describe("POST /v1/logs", () => {
 								{
 									timeUnixNano: "1700000000000000000",
 									attributes: [
+										{
+											key: "session.id",
+											value: { stringValue: "otlp-repo-1" },
+										},
 										{
 											key: "event.name",
 											value: { stringValue: "api_request" },
@@ -307,17 +306,16 @@ describe("POST /v1/logs", () => {
 		const payload: ExportLogsServiceRequest = {
 			resourceLogs: [
 				{
-					resource: {
-						attributes: [
-							{ key: "session.id", value: { stringValue: "otlp-session-1" } },
-						],
-					},
 					scopeLogs: [
 						{
 							logRecords: [
 								{
 									timeUnixNano: "1700000000000000000",
 									attributes: [
+										{
+											key: "session.id",
+											value: { stringValue: "otlp-session-1" },
+										},
 										{
 											key: "event.name",
 											value: { stringValue: "api_request" },
@@ -354,7 +352,6 @@ describe("POST /v1/logs", () => {
 				{
 					resource: {
 						attributes: [
-							{ key: "session.id", value: { stringValue: "otlp-mixed-1" } },
 							{ key: "repository", value: { stringValue: "test-repo" } },
 						],
 					},
@@ -364,6 +361,10 @@ describe("POST /v1/logs", () => {
 								{
 									timeUnixNano: "1700000000000000000",
 									attributes: [
+										{
+											key: "session.id",
+											value: { stringValue: "otlp-mixed-1" },
+										},
 										{
 											key: "event.name",
 											value: { stringValue: "api_request" },
@@ -378,6 +379,10 @@ describe("POST /v1/logs", () => {
 									timeUnixNano: "1700000001000000000",
 									attributes: [
 										{
+											key: "session.id",
+											value: { stringValue: "otlp-mixed-1" },
+										},
+										{
 											key: "event.name",
 											value: { stringValue: "tool_result" },
 										},
@@ -388,6 +393,10 @@ describe("POST /v1/logs", () => {
 									timeUnixNano: "1700000002000000000",
 									attributes: [
 										{
+											key: "session.id",
+											value: { stringValue: "otlp-mixed-1" },
+										},
+										{
 											key: "event.name",
 											value: { stringValue: "user_prompt" },
 										},
@@ -397,6 +406,10 @@ describe("POST /v1/logs", () => {
 								{
 									timeUnixNano: "1700000003000000000",
 									attributes: [
+										{
+											key: "session.id",
+											value: { stringValue: "otlp-mixed-1" },
+										},
 										{
 											key: "event.name",
 											value: { stringValue: "tool_decision" },
@@ -462,11 +475,6 @@ describe("POST /v1/metrics", () => {
 		const payload: ExportMetricsServiceRequest = {
 			resourceMetrics: [
 				{
-					resource: {
-						attributes: [
-							{ key: "session.id", value: { stringValue: "otlp-metric-s1" } },
-						],
-					},
 					scopeMetrics: [
 						{
 							metrics: [
@@ -478,6 +486,10 @@ describe("POST /v1/metrics", () => {
 												timeUnixNano: "1700000000000000000",
 												asInt: 500,
 												attributes: [
+													{
+														key: "session.id",
+														value: { stringValue: "otlp-metric-s1" },
+													},
 													{ key: "type", value: { stringValue: "input" } },
 												],
 											},
