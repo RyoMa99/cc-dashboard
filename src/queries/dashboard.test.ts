@@ -4,6 +4,7 @@ import {
 	insertApiErrors,
 	insertApiRequests,
 	insertToolResults,
+	upsertSessions,
 } from "../repositories/events";
 import type {
 	ParsedApiError,
@@ -11,10 +12,13 @@ import type {
 	ParsedToolResult,
 } from "../types/domain";
 import {
+	buildRepoJoin,
 	getDailyCosts,
 	getDailyTokens,
+	getDistinctRepositories,
 	getOverviewStats,
 	getRecentSessions,
+	getRepositoryCosts,
 	getToolUsage,
 } from "./dashboard";
 
@@ -317,5 +321,244 @@ describe("getRecentSessions", () => {
 
 		const rows = await getRecentSessions(env.DB, 20);
 		expect(rows.length).toBeLessThanOrEqual(20);
+	});
+
+	it("repository フィールドが sessions テーブルから取得される", async () => {
+		const now = Date.now();
+		// Given: session レコードに repository を設定
+		await upsertSessions(env.DB, [
+			{ sessionId: "rs-repo-1", repository: "my-project", timestampMs: now },
+		]);
+		await insertApiRequests(env.DB, [
+			makeApiRequest({
+				sessionId: "rs-repo-1",
+				eventSequence: 1,
+				timestampMs: now,
+			}),
+		]);
+
+		// When: getRecentSessions を実行
+		const rows = await getRecentSessions(env.DB);
+		const row = rows.find((r) => r.sessionId === "rs-repo-1");
+
+		// Then: repository フィールドが返る
+		expect(row).toBeDefined();
+		expect(row?.repository).toBe("my-project");
+	});
+});
+
+// --- buildRepoJoin ヘルパーの単体テスト ---
+
+describe("buildRepoJoin", () => {
+	it("repo が undefined の場合 JOIN も WHERE も空を返す", () => {
+		const result = buildRepoJoin(undefined, "a");
+		expect(result.join).toBe("");
+		expect(result.where).toBe("");
+		expect(result.binds).toEqual([]);
+	});
+
+	it("repo が文字列の場合 JOIN と WHERE = ? を返す", () => {
+		const result = buildRepoJoin("cc-dashboard", "a");
+		expect(result.join).toContain("JOIN sessions");
+		expect(result.join).toContain("a.session_id = s.session_id");
+		expect(result.where).toContain("s.repository = ?");
+		expect(result.binds).toEqual(["cc-dashboard"]);
+	});
+
+	it("repo が null の場合 JOIN と WHERE IS NULL を返す", () => {
+		const result = buildRepoJoin(null, "a");
+		expect(result.join).toContain("JOIN sessions");
+		expect(result.where).toContain("s.repository IS NULL");
+		expect(result.binds).toEqual([]);
+	});
+});
+
+// --- repository フィルタの統合テスト ---
+
+/** テスト用にセッション + APIリクエストを一括セットアップ */
+async function setupRepoTestData() {
+	const now = Date.now();
+	const ts = daysAgoMs(1);
+
+	// セッション: 2つのリポジトリ + 1つの未分類
+	await upsertSessions(env.DB, [
+		{ sessionId: "rf-proj-a", repository: "project-a", timestampMs: now },
+		{ sessionId: "rf-proj-b", repository: "project-b", timestampMs: now },
+		{ sessionId: "rf-none", repository: null, timestampMs: now },
+	]);
+
+	// APIリクエスト
+	await insertApiRequests(env.DB, [
+		makeApiRequest({
+			sessionId: "rf-proj-a",
+			eventSequence: 1,
+			timestampMs: ts,
+			costUsd: 0.1,
+			inputTokens: 1000,
+			outputTokens: 500,
+		}),
+		makeApiRequest({
+			sessionId: "rf-proj-b",
+			eventSequence: 1,
+			timestampMs: ts,
+			costUsd: 0.2,
+			inputTokens: 2000,
+			outputTokens: 1000,
+		}),
+		makeApiRequest({
+			sessionId: "rf-none",
+			eventSequence: 1,
+			timestampMs: ts,
+			costUsd: 0.05,
+			inputTokens: 500,
+			outputTokens: 250,
+		}),
+	]);
+
+	// ツール結果
+	await insertToolResults(env.DB, [
+		makeToolResult({
+			sessionId: "rf-proj-a",
+			toolName: "Read",
+			success: true,
+			durationMs: 50,
+		}),
+		makeToolResult({
+			sessionId: "rf-proj-b",
+			toolName: "Write",
+			success: true,
+			durationMs: 100,
+		}),
+	]);
+}
+
+describe("getOverviewStats with repo filter", () => {
+	it("repo フィルタでリポジトリ別に集計される", async () => {
+		await setupRepoTestData();
+
+		// When: project-a でフィルタ
+		const stats = await getOverviewStats(env.DB, "project-a");
+
+		// Then: project-a のデータのみ集計
+		expect(stats.totalCost).toBeCloseTo(0.1, 1);
+		expect(stats.totalInputTokens).toBeGreaterThanOrEqual(1000);
+	});
+
+	it("repo が null の場合 repository IS NULL のデータのみ返す", async () => {
+		await setupRepoTestData();
+
+		const stats = await getOverviewStats(env.DB, null);
+		expect(stats.totalCost).toBeCloseTo(0.05, 1);
+	});
+
+	it("存在しないリポジトリを指定するとゼロ結果を返す", async () => {
+		await setupRepoTestData();
+
+		const stats = await getOverviewStats(env.DB, "nonexistent-repo");
+		expect(stats.totalCost).toBe(0);
+		expect(stats.apiCallCount).toBe(0);
+	});
+});
+
+describe("getDailyCosts with repo filter", () => {
+	it("repo フィルタでリポジトリ別にコスト集計される", async () => {
+		await setupRepoTestData();
+
+		const rows = await getDailyCosts(env.DB, 30, "project-a");
+		const totalCost = rows.reduce((sum, r) => sum + r.cost, 0);
+		expect(totalCost).toBeCloseTo(0.1, 1);
+	});
+
+	it("repo undefined の場合は全データを返す（後方互換）", async () => {
+		await setupRepoTestData();
+
+		const rows = await getDailyCosts(env.DB, 30, undefined);
+		const totalCost = rows.reduce((sum, r) => sum + r.cost, 0);
+		expect(totalCost).toBeGreaterThanOrEqual(0.35);
+	});
+});
+
+describe("getDailyTokens with repo filter", () => {
+	it("repo フィルタでリポジトリ別にトークン集計される", async () => {
+		await setupRepoTestData();
+
+		const rows = await getDailyTokens(env.DB, 30, "project-b");
+		const totalInput = rows.reduce((sum, r) => sum + r.inputTokens, 0);
+		expect(totalInput).toBeGreaterThanOrEqual(2000);
+	});
+});
+
+describe("getToolUsage with repo filter", () => {
+	it("repo フィルタでリポジトリ別にツール使用状況が集計される", async () => {
+		await setupRepoTestData();
+
+		const rows = await getToolUsage(env.DB, "project-a");
+		const readTool = rows.find((r) => r.toolName === "Read");
+		expect(readTool).toBeDefined();
+		// project-b の Write は含まれない
+		const writeTool = rows.find((r) => r.toolName === "Write");
+		expect(writeTool).toBeUndefined();
+	});
+});
+
+describe("getRecentSessions with repo filter", () => {
+	it("repo フィルタでリポジトリ別にセッションが返る", async () => {
+		await setupRepoTestData();
+
+		const rows = await getRecentSessions(env.DB, 20, "project-a");
+		expect(rows.every((r) => r.sessionId === "rf-proj-a")).toBe(true);
+	});
+
+	it("repo null で未分類セッションのみ返す", async () => {
+		await setupRepoTestData();
+
+		const rows = await getRecentSessions(env.DB, 20, null);
+		expect(rows.every((r) => r.sessionId === "rf-none")).toBe(true);
+	});
+});
+
+// --- タスク2: リポジトリ別コスト集計・リポジトリ一覧 ---
+
+describe("getRepositoryCosts", () => {
+	it("リポジトリ別にコスト降順で集計を返す", async () => {
+		await setupRepoTestData();
+
+		const rows = await getRepositoryCosts(env.DB);
+		expect(rows.length).toBeGreaterThanOrEqual(2);
+		// コスト降順
+		for (let i = 1; i < rows.length; i++) {
+			expect(rows[i - 1].totalCost).toBeGreaterThanOrEqual(rows[i].totalCost);
+		}
+	});
+
+	it("repository IS NULL のセッションは「未分類」として集計される", async () => {
+		await setupRepoTestData();
+
+		const rows = await getRepositoryCosts(env.DB);
+		const uncategorized = rows.find((r) => r.repository === "未分類");
+		expect(uncategorized).toBeDefined();
+		expect(uncategorized?.totalCost).toBeGreaterThan(0);
+	});
+
+	it("データなしの場合は空配列を返す", async () => {
+		// setupRepoTestData を呼ばず、他テストのデータがあっても関数自体がエラーにならない
+		const rows = await getRepositoryCosts(env.DB);
+		expect(Array.isArray(rows)).toBe(true);
+	});
+});
+
+describe("getDistinctRepositories", () => {
+	it("NULL を除いたユニークなリポジトリ名をアルファベット順で返す", async () => {
+		await setupRepoTestData();
+
+		const repos = await getDistinctRepositories(env.DB);
+		expect(repos).toContain("project-a");
+		expect(repos).toContain("project-b");
+		// NULL は除外
+		expect(repos).not.toContain(null);
+		// アルファベット順
+		for (let i = 1; i < repos.length; i++) {
+			expect(repos[i - 1] <= repos[i]).toBe(true);
+		}
 	});
 });

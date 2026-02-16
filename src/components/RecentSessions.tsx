@@ -24,6 +24,7 @@ export function RecentSessions({ sessions }: { sessions: SessionRow[] }) {
 					<thead>
 						<tr class="bg-gray-800 border-b border-gray-700">
 							<th class="text-left px-4 py-2 font-medium">Session ID</th>
+							<th class="text-left px-4 py-2 font-medium">Repository</th>
 							<th class="text-right px-4 py-2 font-medium">Cost</th>
 							<th class="text-right px-4 py-2 font-medium">Tokens</th>
 							<th class="text-right px-4 py-2 font-medium">API Calls</th>
@@ -43,13 +44,22 @@ export function RecentSessions({ sessions }: { sessions: SessionRow[] }) {
 										{s.sessionId}
 									</a>
 								</td>
-								<td class="px-4 py-2 text-right">{formatCost(s.totalCost)}</td>
-								<td class="px-4 py-2 text-right">
+								<td class="px-4 py-2 text-xs max-w-[150px] truncate">
+									{s.repository ? (
+										s.repository
+									) : (
+										<span class="text-gray-500">未分類</span>
+									)}
+								</td>
+								<td class="px-4 py-2 text-right tabular-nums">
+									{formatCost(s.totalCost)}
+								</td>
+								<td class="px-4 py-2 text-right tabular-nums">
 									{formatTokens(s.totalTokens)}
 								</td>
-								<td class="px-4 py-2 text-right">{s.apiCalls}</td>
-								<td class="px-4 py-2 text-right">{s.toolCalls}</td>
-								<td class="px-4 py-2 text-right">
+								<td class="px-4 py-2 text-right tabular-nums">{s.apiCalls}</td>
+								<td class="px-4 py-2 text-right tabular-nums">{s.toolCalls}</td>
+								<td class="px-4 py-2 text-right tabular-nums">
 									{formatDuration(s.firstSeen, s.lastSeen)}
 								</td>
 								<td class="px-4 py-2 text-right text-xs text-gray-400">
