@@ -16,13 +16,7 @@ function makeLogPayload(
 		resourceLogs: [
 			{
 				resource: {
-					attributes: [
-						{
-							key: "session.id",
-							value: { stringValue: sessionId },
-						},
-						...extraResourceAttrs,
-					],
+					attributes: [...extraResourceAttrs],
 				},
 				scopeLogs: [
 					{
@@ -33,6 +27,10 @@ function makeLogPayload(
 									{
 										key: "event.name",
 										value: { stringValue: eventName },
+									},
+									{
+										key: "session.id",
+										value: { stringValue: sessionId },
 									},
 									...attrs,
 								],
