@@ -1,9 +1,6 @@
+import { formatCost } from "../lib/format";
 import type { DailyCostRow } from "../queries/dashboard";
 import { DailyCostChart } from "./charts/DailyCostChart";
-
-function formatCost(usd: number): string {
-	return `$${usd.toFixed(4)}`;
-}
 
 export function DailyCosts({ rows }: { rows: DailyCostRow[] }) {
 	if (rows.length === 0) {
