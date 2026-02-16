@@ -1,13 +1,14 @@
 import type { DailyCostRow } from "../../queries/dashboard";
 import {
+	MAX_BAR_WIDTH,
 	MODEL_COLORS,
 	PADDING,
+	calcDailyChartWidth,
 	formatCostAxis,
 	niceMax,
 	scaleLinear,
 } from "./chart-utils";
 
-const WIDTH = 600;
 const HEIGHT = 320;
 
 type DailyGroup = {
@@ -61,9 +62,13 @@ export function DailyCostChart({
 	const { groups, models } = groupByDate(rows);
 	const maxTotal = niceMax(Math.max(...groups.map((g) => g.total)));
 
-	const chartW = WIDTH - PADDING.left - PADDING.right;
+	const width = calcDailyChartWidth(groups.length);
+	const chartW = width - PADDING.left - PADDING.right;
 	const chartH = HEIGHT - PADDING.top - PADDING.bottom;
-	const barW = Math.max(1, (chartW / groups.length) * 0.7);
+	const barW = Math.min(
+		Math.max(1, (chartW / groups.length) * 0.7),
+		MAX_BAR_WIDTH,
+	);
 	const gap = (chartW / groups.length) * 0.3;
 
 	const yScale = scaleLinear([0, maxTotal], [chartH, 0]);
@@ -74,9 +79,9 @@ export function DailyCostChart({
 	const labelInterval = Math.max(1, Math.ceil(groups.length / 12));
 
 	return (
-		<div class="mb-4 overflow-x-auto">
+		<div class="mb-4 overflow-x-auto" style={`max-width:${width}px`}>
 			<svg
-				viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+				viewBox={`0 0 ${width} ${HEIGHT}`}
 				width="100%"
 				role="img"
 				aria-label="Daily Costs Chart"
@@ -90,7 +95,7 @@ export function DailyCostChart({
 							<line
 								x1={PADDING.left}
 								y1={y}
-								x2={WIDTH - PADDING.right}
+								x2={width - PADDING.right}
 								y2={y}
 								stroke="#374151"
 								stroke-width="1"
@@ -152,7 +157,11 @@ export function DailyCostChart({
 
 				{/* 凡例 */}
 				{models.slice(0, 5).map((model, i) => {
-					const lx = PADDING.left + i * 110;
+					const legendSpacing = Math.min(
+						110,
+						(width - PADDING.left - 20) / Math.min(models.length, 5),
+					);
+					const lx = PADDING.left + i * legendSpacing;
 					const ly = HEIGHT - 12;
 					const color = MODEL_COLORS[Math.min(i, MODEL_COLORS.length - 1)];
 					return (

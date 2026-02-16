@@ -1,13 +1,14 @@
 import type { ToolUsageRow } from "../../queries/dashboard";
 import { BAR_COLOR } from "./chart-utils";
 
-const WIDTH = 600;
+const FULL_WIDTH = 600;
+const MIN_WIDTH = 400;
+const SCALE_THRESHOLD = 8;
 const ROW_HEIGHT = 30;
 const PADDING_TOP = 10;
 const PADDING_BOTTOM = 10;
 const LABEL_WIDTH = 160;
 const BAR_LEFT = 170;
-const BAR_MAX_WIDTH = 380;
 const VALUE_OFFSET = 10;
 
 export function ToolUsageChart({
@@ -18,12 +19,20 @@ export function ToolUsageChart({
 	// callCount 降順でソート（既にクエリで降順だが保証する）
 	const sorted = tools.slice().sort((a, b) => b.callCount - a.callCount);
 	const maxCount = Math.max(...sorted.map((t) => t.callCount));
+	const width =
+		sorted.length >= SCALE_THRESHOLD
+			? FULL_WIDTH
+			: Math.max(
+					MIN_WIDTH,
+					Math.round((FULL_WIDTH * sorted.length) / SCALE_THRESHOLD),
+				);
+	const barMaxWidth = width - BAR_LEFT - 50;
 	const height = PADDING_TOP + sorted.length * ROW_HEIGHT + PADDING_BOTTOM;
 
 	return (
-		<div class="mb-4 overflow-x-auto">
+		<div class="mb-4 overflow-x-auto" style={`max-width:${width}px`}>
 			<svg
-				viewBox={`0 0 ${WIDTH} ${height}`}
+				viewBox={`0 0 ${width} ${height}`}
 				width="100%"
 				role="img"
 				aria-label="Tool Usage Chart"
@@ -31,7 +40,7 @@ export function ToolUsageChart({
 				{sorted.map((tool, i) => {
 					const y = PADDING_TOP + i * ROW_HEIGHT;
 					const barW =
-						maxCount > 0 ? (tool.callCount / maxCount) * BAR_MAX_WIDTH : 0;
+						maxCount > 0 ? (tool.callCount / maxCount) * barMaxWidth : 0;
 					return (
 						<g key={tool.toolName}>
 							{/* ツール名 */}
