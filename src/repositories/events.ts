@@ -1,8 +1,16 @@
 import type {
 	ParsedApiError,
 	ParsedApiRequest,
+	ParsedToolDecision,
 	ParsedToolResult,
+	ParsedUserPrompt,
 } from "../types/domain";
+
+export type SessionUpsertData = {
+	sessionId: string;
+	repository: string | null;
+	timestampMs: number;
+};
 
 export async function insertApiRequests(
 	db: D1Database,
@@ -43,8 +51,8 @@ export async function insertToolResults(
 
 	const stmt = db.prepare(
 		`INSERT INTO tool_results
-			(session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, success, duration_ms, error, decision, source)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			(session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, success, duration_ms, error, decision, source, tool_parameters)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 	);
 
 	await db.batch(
@@ -60,6 +68,7 @@ export async function insertToolResults(
 				r.error,
 				r.decision,
 				r.source,
+				r.toolParameters,
 			),
 		),
 	);
@@ -90,6 +99,81 @@ export async function insertApiErrors(
 				e.durationMs,
 				e.attempt,
 			),
+		),
+	);
+}
+
+export async function insertUserPrompts(
+	db: D1Database,
+	prompts: ParsedUserPrompt[],
+): Promise<void> {
+	if (prompts.length === 0) return;
+
+	const stmt = db.prepare(
+		`INSERT INTO user_prompts
+			(session_id, event_sequence, timestamp_ns, timestamp_ms, prompt_length, prompt)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+	);
+
+	await db.batch(
+		prompts.map((p) =>
+			stmt.bind(
+				p.sessionId,
+				p.eventSequence,
+				p.timestampNs,
+				p.timestampMs,
+				p.promptLength,
+				p.prompt,
+			),
+		),
+	);
+}
+
+export async function insertToolDecisions(
+	db: D1Database,
+	decisions: ParsedToolDecision[],
+): Promise<void> {
+	if (decisions.length === 0) return;
+
+	const stmt = db.prepare(
+		`INSERT INTO tool_decisions
+			(session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, decision, source)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+	);
+
+	await db.batch(
+		decisions.map((d) =>
+			stmt.bind(
+				d.sessionId,
+				d.eventSequence,
+				d.timestampNs,
+				d.timestampMs,
+				d.toolName,
+				d.decision,
+				d.source,
+			),
+		),
+	);
+}
+
+export async function upsertSessions(
+	db: D1Database,
+	sessions: SessionUpsertData[],
+): Promise<void> {
+	if (sessions.length === 0) return;
+
+	const stmt = db.prepare(
+		`INSERT INTO sessions (session_id, repository, first_event_at, last_event_at)
+		VALUES (?, ?, ?, ?)
+		ON CONFLICT(session_id) DO UPDATE SET
+			repository = COALESCE(excluded.repository, sessions.repository),
+			first_event_at = MIN(sessions.first_event_at, excluded.first_event_at),
+			last_event_at = MAX(sessions.last_event_at, excluded.last_event_at)`,
+	);
+
+	await db.batch(
+		sessions.map((s) =>
+			stmt.bind(s.sessionId, s.repository, s.timestampMs, s.timestampMs),
 		),
 	);
 }

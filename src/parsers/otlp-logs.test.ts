@@ -5,8 +5,13 @@ import { parseLogsPayload } from "./otlp-logs";
 function makeLogPayload(
 	eventName: string,
 	attrs: KeyValue[],
-	sessionId = "test-session-123",
+	options?: {
+		sessionId?: string;
+		resourceAttrs?: KeyValue[];
+	},
 ): ExportLogsServiceRequest {
+	const sessionId = options?.sessionId ?? "test-session-123";
+	const extraResourceAttrs = options?.resourceAttrs ?? [];
 	return {
 		resourceLogs: [
 			{
@@ -16,6 +21,7 @@ function makeLogPayload(
 							key: "session.id",
 							value: { stringValue: sessionId },
 						},
+						...extraResourceAttrs,
 					],
 				},
 				scopeLogs: [
@@ -53,12 +59,13 @@ describe("parseLogsPayload", () => {
 				{ key: "event.sequence", value: { intValue: 1 } },
 			]);
 
-			const events = parseLogsPayload(payload);
-			expect(events).toHaveLength(1);
-			expect(events[0].type).toBe("api_request");
+			const result = parseLogsPayload(payload);
+			expect(result.events).toHaveLength(1);
+			expect(result.events[0].type).toBe("api_request");
 
-			if (events[0].type !== "api_request") throw new Error("unreachable");
-			const data = events[0].data;
+			if (result.events[0].type !== "api_request")
+				throw new Error("unreachable");
+			const data = result.events[0].data;
 			expect(data.sessionId).toBe("test-session-123");
 			expect(data.model).toBe("claude-sonnet-4-5-20250929");
 			expect(data.costUsd).toBe(0.003);
@@ -78,10 +85,11 @@ describe("parseLogsPayload", () => {
 				{ key: "duration_ms", value: { intValue: "2000" } },
 			]);
 
-			const events = parseLogsPayload(payload);
-			if (events[0].type !== "api_request") throw new Error("unreachable");
-			expect(events[0].data.inputTokens).toBe(500);
-			expect(events[0].data.durationMs).toBe(2000);
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "api_request")
+				throw new Error("unreachable");
+			expect(result.events[0].data.inputTokens).toBe(500);
+			expect(result.events[0].data.durationMs).toBe(2000);
 		});
 	});
 
@@ -95,16 +103,18 @@ describe("parseLogsPayload", () => {
 				{ key: "source", value: { stringValue: "config" } },
 			]);
 
-			const events = parseLogsPayload(payload);
-			expect(events).toHaveLength(1);
-			if (events[0].type !== "tool_result") throw new Error("unreachable");
-			const data = events[0].data;
+			const result = parseLogsPayload(payload);
+			expect(result.events).toHaveLength(1);
+			if (result.events[0].type !== "tool_result")
+				throw new Error("unreachable");
+			const data = result.events[0].data;
 			expect(data.toolName).toBe("Read");
 			expect(data.success).toBe(true);
 			expect(data.durationMs).toBe(50);
 			expect(data.decision).toBe("accept");
 			expect(data.source).toBe("config");
 			expect(data.error).toBeNull();
+			expect(data.toolParameters).toBeNull();
 		});
 
 		it("失敗ケースをパースする", () => {
@@ -114,10 +124,26 @@ describe("parseLogsPayload", () => {
 				{ key: "error", value: { stringValue: "Command failed" } },
 			]);
 
-			const events = parseLogsPayload(payload);
-			if (events[0].type !== "tool_result") throw new Error("unreachable");
-			expect(events[0].data.success).toBe(false);
-			expect(events[0].data.error).toBe("Command failed");
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "tool_result")
+				throw new Error("unreachable");
+			expect(result.events[0].data.success).toBe(false);
+			expect(result.events[0].data.error).toBe("Command failed");
+		});
+
+		it("tool_parameters を JSON 文字列として格納する", () => {
+			const payload = makeLogPayload("tool_result", [
+				{ key: "tool_name", value: { stringValue: "Bash" } },
+				{
+					key: "tool_parameters",
+					value: { stringValue: '{"command":"ls"}' },
+				},
+			]);
+
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "tool_result")
+				throw new Error("unreachable");
+			expect(result.events[0].data.toolParameters).toBe('{"command":"ls"}');
 		});
 	});
 
@@ -131,9 +157,9 @@ describe("parseLogsPayload", () => {
 				{ key: "attempt", value: { intValue: 3 } },
 			]);
 
-			const events = parseLogsPayload(payload);
-			if (events[0].type !== "api_error") throw new Error("unreachable");
-			const data = events[0].data;
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "api_error") throw new Error("unreachable");
+			const data = result.events[0].data;
 			expect(data.model).toBe("claude-sonnet-4-5-20250929");
 			expect(data.error).toBe("Rate limit exceeded");
 			expect(data.statusCode).toBe(429);
@@ -142,10 +168,128 @@ describe("parseLogsPayload", () => {
 		});
 	});
 
+	describe("user_prompt イベント", () => {
+		it("すべてのフィールドを正しくパースする", () => {
+			const payload = makeLogPayload("user_prompt", [
+				{ key: "prompt_length", value: { intValue: 150 } },
+				{ key: "prompt", value: { stringValue: "Hello" } },
+				{ key: "event.sequence", value: { intValue: 5 } },
+			]);
+
+			const result = parseLogsPayload(payload);
+			expect(result.events).toHaveLength(1);
+			expect(result.events[0].type).toBe("user_prompt");
+
+			if (result.events[0].type !== "user_prompt")
+				throw new Error("unreachable");
+			const data = result.events[0].data;
+			expect(data.sessionId).toBe("test-session-123");
+			expect(data.promptLength).toBe(150);
+			expect(data.prompt).toBe("Hello");
+			expect(data.eventSequence).toBe(5);
+			expect(data.timestampMs).toBe(1700000000000);
+		});
+
+		it("prompt 属性なしの場合 null になる", () => {
+			const payload = makeLogPayload("user_prompt", [
+				{ key: "prompt_length", value: { intValue: 42 } },
+			]);
+
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "user_prompt")
+				throw new Error("unreachable");
+			expect(result.events[0].data.prompt).toBeNull();
+		});
+
+		it("prompt_length なしの場合 0 になる", () => {
+			const payload = makeLogPayload("user_prompt", []);
+
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "user_prompt")
+				throw new Error("unreachable");
+			expect(result.events[0].data.promptLength).toBe(0);
+		});
+	});
+
+	describe("tool_decision イベント", () => {
+		it("すべてのフィールドを正しくパースする", () => {
+			const payload = makeLogPayload("tool_decision", [
+				{ key: "tool_name", value: { stringValue: "Bash" } },
+				{ key: "decision", value: { stringValue: "reject" } },
+				{ key: "source", value: { stringValue: "user" } },
+				{ key: "event.sequence", value: { intValue: 3 } },
+			]);
+
+			const result = parseLogsPayload(payload);
+			expect(result.events).toHaveLength(1);
+			expect(result.events[0].type).toBe("tool_decision");
+
+			if (result.events[0].type !== "tool_decision")
+				throw new Error("unreachable");
+			const data = result.events[0].data;
+			expect(data.sessionId).toBe("test-session-123");
+			expect(data.toolName).toBe("Bash");
+			expect(data.decision).toBe("reject");
+			expect(data.source).toBe("user");
+			expect(data.eventSequence).toBe(3);
+		});
+
+		it("source なしの場合 null になる", () => {
+			const payload = makeLogPayload("tool_decision", [
+				{ key: "tool_name", value: { stringValue: "Bash" } },
+				{ key: "decision", value: { stringValue: "accept" } },
+			]);
+
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "tool_decision")
+				throw new Error("unreachable");
+			expect(result.events[0].data.source).toBeNull();
+		});
+	});
+
+	describe("resourceContexts", () => {
+		it("resource attributes から repository を抽出する", () => {
+			const payload = makeLogPayload(
+				"api_request",
+				[
+					{
+						key: "model",
+						value: { stringValue: "claude-sonnet-4-5-20250929" },
+					},
+				],
+				{
+					resourceAttrs: [
+						{ key: "repository", value: { stringValue: "cc-dashboard" } },
+					],
+				},
+			);
+
+			const result = parseLogsPayload(payload);
+			expect(result.resourceContexts).toHaveLength(1);
+			expect(result.resourceContexts[0].sessionId).toBe("test-session-123");
+			expect(result.resourceContexts[0].repository).toBe("cc-dashboard");
+		});
+
+		it("repository なしの場合 null になる", () => {
+			const payload = makeLogPayload("api_request", [
+				{ key: "model", value: { stringValue: "claude-sonnet-4-5-20250929" } },
+			]);
+
+			const result = parseLogsPayload(payload);
+			expect(result.resourceContexts).toHaveLength(1);
+			expect(result.resourceContexts[0].repository).toBeNull();
+		});
+	});
+
 	describe("エッジケース", () => {
-		it("空のペイロードは空配列を返す", () => {
-			expect(parseLogsPayload({})).toEqual([]);
-			expect(parseLogsPayload({ resourceLogs: [] })).toEqual([]);
+		it("空のペイロードは空の結果を返す", () => {
+			const result1 = parseLogsPayload({});
+			expect(result1.events).toEqual([]);
+			expect(result1.resourceContexts).toEqual([]);
+
+			const result2 = parseLogsPayload({ resourceLogs: [] });
+			expect(result2.events).toEqual([]);
+			expect(result2.resourceContexts).toEqual([]);
 		});
 
 		it("event.name がないレコードはスキップする", () => {
@@ -167,16 +311,16 @@ describe("parseLogsPayload", () => {
 					},
 				],
 			};
-			expect(parseLogsPayload(payload)).toEqual([]);
+			expect(parseLogsPayload(payload).events).toEqual([]);
 		});
 
 		it("未知の event.name は unknown として返す", () => {
-			const payload = makeLogPayload("user_prompt", []);
-			const events = parseLogsPayload(payload);
-			expect(events).toHaveLength(1);
-			expect(events[0].type).toBe("unknown");
-			if (events[0].type !== "unknown") throw new Error("unreachable");
-			expect(events[0].eventName).toBe("user_prompt");
+			const payload = makeLogPayload("some_future_event", []);
+			const result = parseLogsPayload(payload);
+			expect(result.events).toHaveLength(1);
+			expect(result.events[0].type).toBe("unknown");
+			if (result.events[0].type !== "unknown") throw new Error("unreachable");
+			expect(result.events[0].eventName).toBe("some_future_event");
 		});
 
 		it("複数レコードをまとめてパースする", () => {
@@ -222,10 +366,10 @@ describe("parseLogsPayload", () => {
 				],
 			};
 
-			const events = parseLogsPayload(payload);
-			expect(events).toHaveLength(2);
-			expect(events[0].type).toBe("api_request");
-			expect(events[1].type).toBe("tool_result");
+			const result = parseLogsPayload(payload);
+			expect(result.events).toHaveLength(2);
+			expect(result.events[0].type).toBe("api_request");
+			expect(result.events[1].type).toBe("tool_result");
 		});
 	});
 });

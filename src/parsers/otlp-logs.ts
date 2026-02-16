@@ -1,8 +1,12 @@
 import type {
+	ParseLogsResult,
 	ParsedApiError,
 	ParsedApiRequest,
 	ParsedLogEvent,
+	ParsedResourceContext,
+	ParsedToolDecision,
 	ParsedToolResult,
+	ParsedUserPrompt,
 } from "../types/domain";
 import type {
 	AnyValue,
@@ -13,11 +17,17 @@ import type {
 
 export function parseLogsPayload(
 	payload: ExportLogsServiceRequest,
-): ParsedLogEvent[] {
+): ParseLogsResult {
 	const events: ParsedLogEvent[] = [];
+	const resourceContexts: ParsedResourceContext[] = [];
 
 	for (const rl of payload.resourceLogs ?? []) {
 		const resourceAttrs = rl.resource?.attributes ?? [];
+
+		const sessionId = getStringAttr(resourceAttrs, "session.id") || "unknown";
+		const repository = getStringAttr(resourceAttrs, "repository");
+		resourceContexts.push({ sessionId, repository });
+
 		for (const sl of rl.scopeLogs ?? []) {
 			for (const record of sl.logRecords ?? []) {
 				const event = parseLogRecord(record, resourceAttrs);
@@ -28,7 +38,7 @@ export function parseLogsPayload(
 		}
 	}
 
-	return events;
+	return { events, resourceContexts };
 }
 
 function parseLogRecord(
@@ -81,6 +91,28 @@ function parseLogRecord(
 					timestampMs,
 				),
 			};
+		case "user_prompt":
+			return {
+				type: "user_prompt",
+				data: parseUserPrompt(
+					attrs,
+					sessionId,
+					eventSequence,
+					timestampNs,
+					timestampMs,
+				),
+			};
+		case "tool_decision":
+			return {
+				type: "tool_decision",
+				data: parseToolDecision(
+					attrs,
+					sessionId,
+					eventSequence,
+					timestampNs,
+					timestampMs,
+				),
+			};
 		default:
 			return { type: "unknown", eventName };
 	}
@@ -126,6 +158,7 @@ function parseToolResult(
 		error: getStringAttr(attrs, "error") ?? null,
 		decision: getStringAttr(attrs, "decision") ?? null,
 		source: getStringAttr(attrs, "source") ?? null,
+		toolParameters: getStringAttr(attrs, "tool_parameters") ?? null,
 	};
 }
 
@@ -146,6 +179,41 @@ function parseApiError(
 		statusCode: getIntAttr(attrs, "status_code") ?? null,
 		durationMs: getIntAttr(attrs, "duration_ms") ?? 0,
 		attempt: getIntAttr(attrs, "attempt") ?? 1,
+	};
+}
+
+function parseUserPrompt(
+	attrs: KeyValue[],
+	sessionId: string,
+	eventSequence: number | null,
+	timestampNs: string,
+	timestampMs: number,
+): ParsedUserPrompt {
+	return {
+		sessionId,
+		eventSequence,
+		timestampNs,
+		timestampMs,
+		promptLength: getIntAttr(attrs, "prompt_length") ?? 0,
+		prompt: getStringAttr(attrs, "prompt") ?? null,
+	};
+}
+
+function parseToolDecision(
+	attrs: KeyValue[],
+	sessionId: string,
+	eventSequence: number | null,
+	timestampNs: string,
+	timestampMs: number,
+): ParsedToolDecision {
+	return {
+		sessionId,
+		eventSequence,
+		timestampNs,
+		timestampMs,
+		toolName: getStringAttr(attrs, "tool_name") ?? "unknown",
+		decision: getStringAttr(attrs, "decision") ?? "unknown",
+		source: getStringAttr(attrs, "source") ?? null,
 	};
 }
 

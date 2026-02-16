@@ -61,10 +61,14 @@ flowchart LR
     B -->|api_request| C[api_requests]
     B -->|tool_result| D[tool_results]
     B -->|api_error| E[api_errors]
+    B -->|user_prompt| UP[user_prompts]
+    B -->|tool_decision| TD[tool_decisions]
+
+    A -- "resource\nattributes" --> S[sessions]
 
     F[OTLP\nMetric] --> G[metric_data_points]
 
-    C & D & E & G --> H[(D1)]
+    C & D & E & UP & TD & S & G --> H[(D1)]
 ```
 
 **ダッシュボード表示** (D1 → Browser)
@@ -96,6 +100,13 @@ flowchart LR
 
 ```mermaid
 erDiagram
+    sessions {
+        text session_id PK
+        text repository
+        int first_event_at
+        int last_event_at
+    }
+
     api_requests {
         int id PK
         text session_id
@@ -117,6 +128,7 @@ erDiagram
         int duration_ms
         text error
         text decision
+        text tool_parameters
         int timestamp_ms
     }
 
@@ -131,6 +143,23 @@ erDiagram
         int timestamp_ms
     }
 
+    user_prompts {
+        int id PK
+        text session_id
+        int prompt_length
+        text prompt
+        int timestamp_ms
+    }
+
+    tool_decisions {
+        int id PK
+        text session_id
+        text tool_name
+        text decision
+        text source
+        int timestamp_ms
+    }
+
     metric_data_points {
         int id PK
         text session_id
@@ -141,6 +170,12 @@ erDiagram
         text attributes_json
         int timestamp_ms
     }
+
+    sessions ||--o{ api_requests : ""
+    sessions ||--o{ tool_results : ""
+    sessions ||--o{ api_errors : ""
+    sessions ||--o{ user_prompts : ""
+    sessions ||--o{ tool_decisions : ""
 ```
 
 ## セットアップ

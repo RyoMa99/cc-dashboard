@@ -26,6 +26,26 @@ export type ParsedToolResult = {
 	error: string | null;
 	decision: string | null;
 	source: string | null;
+	toolParameters: string | null;
+};
+
+export type ParsedUserPrompt = {
+	sessionId: string;
+	eventSequence: number | null;
+	timestampNs: string;
+	timestampMs: number;
+	promptLength: number;
+	prompt: string | null;
+};
+
+export type ParsedToolDecision = {
+	sessionId: string;
+	eventSequence: number | null;
+	timestampNs: string;
+	timestampMs: number;
+	toolName: string;
+	decision: string;
+	source: string | null;
 };
 
 export type ParsedApiError = {
@@ -44,7 +64,19 @@ export type ParsedLogEvent =
 	| { type: "api_request"; data: ParsedApiRequest }
 	| { type: "tool_result"; data: ParsedToolResult }
 	| { type: "api_error"; data: ParsedApiError }
+	| { type: "user_prompt"; data: ParsedUserPrompt }
+	| { type: "tool_decision"; data: ParsedToolDecision }
 	| { type: "unknown"; eventName: string };
+
+export type ParsedResourceContext = {
+	sessionId: string;
+	repository: string | null;
+};
+
+export type ParseLogsResult = {
+	events: ParsedLogEvent[];
+	resourceContexts: ParsedResourceContext[];
+};
 
 export type ParsedMetricDataPoint = {
 	sessionId: string | null;
