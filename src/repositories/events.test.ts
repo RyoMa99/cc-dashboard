@@ -3,12 +3,18 @@ import { describe, expect, it } from "vitest";
 import type {
 	ParsedApiError,
 	ParsedApiRequest,
+	ParsedToolDecision,
 	ParsedToolResult,
+	ParsedUserPrompt,
 } from "../types/domain";
 import {
+	type SessionUpsertData,
 	insertApiErrors,
 	insertApiRequests,
+	insertToolDecisions,
 	insertToolResults,
+	insertUserPrompts,
+	upsertSessions,
 } from "./events";
 
 function makeApiRequest(
@@ -44,6 +50,7 @@ function makeToolResult(
 		error: null,
 		decision: "accept",
 		source: "config",
+		toolParameters: null,
 		...overrides,
 	};
 }
@@ -59,6 +66,35 @@ function makeApiError(overrides?: Partial<ParsedApiError>): ParsedApiError {
 		statusCode: 429,
 		durationMs: 100,
 		attempt: 1,
+		...overrides,
+	};
+}
+
+function makeUserPrompt(
+	overrides?: Partial<ParsedUserPrompt>,
+): ParsedUserPrompt {
+	return {
+		sessionId: "session-1",
+		eventSequence: 4,
+		timestampNs: "1700000003000000000",
+		timestampMs: 1700000003000,
+		promptLength: 42,
+		prompt: "Hello Claude",
+		...overrides,
+	};
+}
+
+function makeToolDecision(
+	overrides?: Partial<ParsedToolDecision>,
+): ParsedToolDecision {
+	return {
+		sessionId: "session-1",
+		eventSequence: 5,
+		timestampNs: "1700000004000000000",
+		timestampMs: 1700000004000,
+		toolName: "Bash",
+		decision: "reject",
+		source: "user",
 		...overrides,
 	};
 }
@@ -127,6 +163,23 @@ describe("insertToolResults", () => {
 		expect(row?.error).toBeNull();
 		expect(row?.decision).toBe("accept");
 		expect(row?.source).toBe("config");
+		expect(row?.tool_parameters).toBeNull();
+	});
+
+	it("tool_parameters を格納する", async () => {
+		const result = makeToolResult({
+			sessionId: "session-tp",
+			toolParameters: '{"command":"ls"}',
+		});
+		await insertToolResults(env.DB, [result]);
+
+		const row = await env.DB.prepare(
+			"SELECT tool_parameters FROM tool_results WHERE session_id = ?",
+		)
+			.bind("session-tp")
+			.first();
+
+		expect(row?.tool_parameters).toBe('{"command":"ls"}');
 	});
 
 	it("空配列を渡すと正常終了する", async () => {
@@ -155,5 +208,156 @@ describe("insertApiErrors", () => {
 
 	it("空配列を渡すと正常終了する", async () => {
 		await expect(insertApiErrors(env.DB, [])).resolves.toBeUndefined();
+	});
+});
+
+describe("insertUserPrompts", () => {
+	it("1件の ParsedUserPrompt を挿入する", async () => {
+		const prompt = makeUserPrompt({ sessionId: "session-up" });
+		await insertUserPrompts(env.DB, [prompt]);
+
+		const row = await env.DB.prepare(
+			"SELECT * FROM user_prompts WHERE session_id = ?",
+		)
+			.bind("session-up")
+			.first();
+
+		expect(row).not.toBeNull();
+		expect(row?.session_id).toBe("session-up");
+		expect(row?.event_sequence).toBe(4);
+		expect(row?.prompt_length).toBe(42);
+		expect(row?.prompt).toBe("Hello Claude");
+	});
+
+	it("空配列を渡すと正常終了する", async () => {
+		await expect(insertUserPrompts(env.DB, [])).resolves.toBeUndefined();
+	});
+});
+
+describe("insertToolDecisions", () => {
+	it("1件の ParsedToolDecision を挿入する", async () => {
+		const decision = makeToolDecision({ sessionId: "session-td" });
+		await insertToolDecisions(env.DB, [decision]);
+
+		const row = await env.DB.prepare(
+			"SELECT * FROM tool_decisions WHERE session_id = ?",
+		)
+			.bind("session-td")
+			.first();
+
+		expect(row).not.toBeNull();
+		expect(row?.session_id).toBe("session-td");
+		expect(row?.tool_name).toBe("Bash");
+		expect(row?.decision).toBe("reject");
+		expect(row?.source).toBe("user");
+	});
+
+	it("空配列を渡すと正常終了する", async () => {
+		await expect(insertToolDecisions(env.DB, [])).resolves.toBeUndefined();
+	});
+});
+
+describe("upsertSessions", () => {
+	it("新規 session_id で first_event_at = last_event_at = timestampMs", async () => {
+		const data: SessionUpsertData = {
+			sessionId: "upsert-new",
+			repository: "cc-dashboard",
+			timestampMs: 1700000000000,
+		};
+		await upsertSessions(env.DB, [data]);
+
+		const row = await env.DB.prepare(
+			"SELECT * FROM sessions WHERE session_id = ?",
+		)
+			.bind("upsert-new")
+			.first();
+
+		expect(row).not.toBeNull();
+		expect(row?.session_id).toBe("upsert-new");
+		expect(row?.repository).toBe("cc-dashboard");
+		expect(row?.first_event_at).toBe(1700000000000);
+		expect(row?.last_event_at).toBe(1700000000000);
+	});
+
+	it("既存 session_id + 後のタイムスタンプで last_event_at が更新される", async () => {
+		await upsertSessions(env.DB, [
+			{ sessionId: "upsert-later", repository: "repo", timestampMs: 1000 },
+		]);
+		await upsertSessions(env.DB, [
+			{ sessionId: "upsert-later", repository: "repo", timestampMs: 2000 },
+		]);
+
+		const row = await env.DB.prepare(
+			"SELECT * FROM sessions WHERE session_id = ?",
+		)
+			.bind("upsert-later")
+			.first();
+
+		expect(row?.first_event_at).toBe(1000);
+		expect(row?.last_event_at).toBe(2000);
+	});
+
+	it("既存 session_id + 前のタイムスタンプで first_event_at が更新される", async () => {
+		await upsertSessions(env.DB, [
+			{ sessionId: "upsert-earlier", repository: "repo", timestampMs: 2000 },
+		]);
+		await upsertSessions(env.DB, [
+			{ sessionId: "upsert-earlier", repository: "repo", timestampMs: 500 },
+		]);
+
+		const row = await env.DB.prepare(
+			"SELECT * FROM sessions WHERE session_id = ?",
+		)
+			.bind("upsert-earlier")
+			.first();
+
+		expect(row?.first_event_at).toBe(500);
+		expect(row?.last_event_at).toBe(2000);
+	});
+
+	it("repository=null で既存 repository を保持する", async () => {
+		await upsertSessions(env.DB, [
+			{
+				sessionId: "upsert-keep-repo",
+				repository: "existing",
+				timestampMs: 1000,
+			},
+		]);
+		await upsertSessions(env.DB, [
+			{ sessionId: "upsert-keep-repo", repository: null, timestampMs: 2000 },
+		]);
+
+		const row = await env.DB.prepare(
+			"SELECT * FROM sessions WHERE session_id = ?",
+		)
+			.bind("upsert-keep-repo")
+			.first();
+
+		expect(row?.repository).toBe("existing");
+	});
+
+	it("既存 repository が null の場合に新しい repository で更新する", async () => {
+		await upsertSessions(env.DB, [
+			{ sessionId: "upsert-set-repo", repository: null, timestampMs: 1000 },
+		]);
+		await upsertSessions(env.DB, [
+			{
+				sessionId: "upsert-set-repo",
+				repository: "new-repo",
+				timestampMs: 2000,
+			},
+		]);
+
+		const row = await env.DB.prepare(
+			"SELECT * FROM sessions WHERE session_id = ?",
+		)
+			.bind("upsert-set-repo")
+			.first();
+
+		expect(row?.repository).toBe("new-repo");
+	});
+
+	it("空配列を渡すと正常終了する", async () => {
+		await expect(upsertSessions(env.DB, [])).resolves.toBeUndefined();
 	});
 });

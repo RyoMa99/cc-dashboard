@@ -51,6 +51,7 @@ function makeToolResult(
 		error: null,
 		decision: null,
 		source: null,
+		toolParameters: null,
 		...overrides,
 	};
 }
