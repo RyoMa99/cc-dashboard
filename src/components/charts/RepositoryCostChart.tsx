@@ -2,13 +2,15 @@ import { formatCost } from "../../lib/format";
 import type { RepositoryCostRow } from "../../queries/dashboard";
 import { BAR_COLOR } from "./chart-utils";
 
-const WIDTH = 600;
+const FULL_WIDTH = 600;
+const MIN_WIDTH = 400;
+const SCALE_THRESHOLD = 8;
 const ROW_HEIGHT = 30;
 const PADDING_TOP = 10;
 const PADDING_BOTTOM = 10;
 const LABEL_WIDTH = 160;
 const BAR_LEFT = 170;
-const BAR_MAX_WIDTH = 380;
+const RIGHT_MARGIN = 60;
 const VALUE_OFFSET = 10;
 
 export function RepositoryCostChart({
@@ -18,12 +20,20 @@ export function RepositoryCostChart({
 
 	const sorted = rows.slice().sort((a, b) => b.totalCost - a.totalCost);
 	const maxCost = Math.max(...sorted.map((r) => r.totalCost));
+	const width =
+		sorted.length >= SCALE_THRESHOLD
+			? FULL_WIDTH
+			: Math.max(
+					MIN_WIDTH,
+					Math.round((FULL_WIDTH * sorted.length) / SCALE_THRESHOLD),
+				);
+	const barMaxWidth = width - BAR_LEFT - RIGHT_MARGIN;
 	const height = PADDING_TOP + sorted.length * ROW_HEIGHT + PADDING_BOTTOM;
 
 	return (
-		<div class="mb-4 overflow-x-auto">
+		<div class="mb-4 overflow-x-auto" style={`max-width:${width}px`}>
 			<svg
-				viewBox={`0 0 ${WIDTH} ${height}`}
+				viewBox={`0 0 ${width} ${height}`}
 				width="100%"
 				role="img"
 				aria-label="Repository Cost Chart"
@@ -31,7 +41,7 @@ export function RepositoryCostChart({
 				{sorted.map((row, i) => {
 					const y = PADDING_TOP + i * ROW_HEIGHT;
 					const barW =
-						maxCost > 0 ? (row.totalCost / maxCost) * BAR_MAX_WIDTH : 0;
+						maxCost > 0 ? (row.totalCost / maxCost) * barMaxWidth : 0;
 					return (
 						<g key={row.repository}>
 							<text
