@@ -23,16 +23,19 @@ export function parseLogsPayload(
 
 	for (const rl of payload.resourceLogs ?? []) {
 		const resourceAttrs = rl.resource?.attributes ?? [];
-
-		const sessionId = getStringAttr(resourceAttrs, "session.id") || "unknown";
 		const repository = getStringAttr(resourceAttrs, "repository");
-		resourceContexts.push({ sessionId, repository });
 
 		for (const sl of rl.scopeLogs ?? []) {
 			for (const record of sl.logRecords ?? []) {
 				const event = parseLogRecord(record, resourceAttrs);
 				if (event) {
 					events.push(event);
+					if (event.type !== "unknown") {
+						resourceContexts.push({
+							sessionId: event.data.sessionId,
+							repository,
+						});
+					}
 				}
 			}
 		}
