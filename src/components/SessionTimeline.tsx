@@ -93,10 +93,14 @@ function ApiRequestCard(
 			</div>
 			<div class="flex flex-wrap gap-3 text-sm">
 				<span class="text-gray-300 font-mono text-xs">{event.model}</span>
-				<span class="text-gray-300">{formatCost(event.costUsd)}</span>
-				<span class="text-gray-300">{formatDurationMs(event.durationMs)}</span>
+				<span class="text-gray-300 tabular-nums">
+					{formatCost(event.costUsd)}
+				</span>
+				<span class="text-gray-300 tabular-nums">
+					{formatDurationMs(event.durationMs)}
+				</span>
 			</div>
-			<div class="mt-2 flex flex-wrap gap-3 text-xs text-gray-400">
+			<div class="mt-2 flex flex-wrap gap-3 text-xs text-gray-400 tabular-nums">
 				<span>In: {formatTokens(event.inputTokens)}</span>
 				<span>Out: {formatTokens(event.outputTokens)}</span>
 				{event.cacheReadTokens > 0 && (
@@ -133,7 +137,7 @@ function ToolResultCard(
 					label={event.success ? "success" : "failed"}
 					color={event.success ? "green" : "red"}
 				/>
-				<span class="text-gray-400 text-xs">
+				<span class="text-gray-400 text-xs tabular-nums">
 					{formatDurationMs(event.durationMs)}
 				</span>
 			</div>
@@ -190,10 +194,12 @@ function ApiErrorCard(event: Extract<TimelineEvent, { type: "api_error" }>) {
 				{event.statusCode && (
 					<Badge label={String(event.statusCode)} color="red" />
 				)}
-				<span class="text-gray-400 text-xs">
+				<span class="text-gray-400 text-xs tabular-nums">
 					{formatDurationMs(event.durationMs)}
 				</span>
-				<span class="text-gray-400 text-xs">attempt #{event.attempt}</span>
+				<span class="text-gray-400 text-xs tabular-nums">
+					attempt #{event.attempt}
+				</span>
 			</div>
 			<p class="mt-2 text-xs text-red-400 bg-red-900/30 rounded p-2">
 				{event.error}
