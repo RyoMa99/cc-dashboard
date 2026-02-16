@@ -55,6 +55,19 @@ export const TOKEN_COLORS: Record<
 
 export const BAR_COLOR = "#60a5fa"; // blue-400
 
+const MAX_BAR_SLOT = 86;
+const MIN_CHART_WIDTH = 400;
+const MAX_CHART_WIDTH = 600;
+export const MAX_BAR_WIDTH = 60;
+
+export function calcDailyChartWidth(dataCount: number): number {
+	const paddingH = PADDING.left + PADDING.right;
+	return Math.max(
+		MIN_CHART_WIDTH,
+		Math.min(MAX_CHART_WIDTH, paddingH + dataCount * MAX_BAR_SLOT),
+	);
+}
+
 export const PADDING = {
 	top: 20,
 	right: 20,

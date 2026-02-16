@@ -1,13 +1,14 @@
 import type { DailyTokenRow } from "../../queries/dashboard";
 import {
+	MAX_BAR_WIDTH,
 	PADDING,
 	TOKEN_COLORS,
+	calcDailyChartWidth,
 	formatCompact,
 	niceMax,
 	scaleLinear,
 } from "./chart-utils";
 
-const WIDTH = 600;
 const HEIGHT = 320;
 const TOKEN_KEYS = ["input", "output", "cacheRead", "cacheCreate"] as const;
 const LEGEND_LABELS: Record<(typeof TOKEN_KEYS)[number], string> = {
@@ -41,9 +42,13 @@ export function DailyTokenChart({
 	);
 	const maxTotal = niceMax(Math.max(...totals));
 
-	const chartW = WIDTH - PADDING.left - PADDING.right;
+	const width = calcDailyChartWidth(data.length);
+	const chartW = width - PADDING.left - PADDING.right;
 	const chartH = HEIGHT - PADDING.top - PADDING.bottom;
-	const barW = Math.max(1, (chartW / data.length) * 0.7);
+	const barW = Math.min(
+		Math.max(1, (chartW / data.length) * 0.7),
+		MAX_BAR_WIDTH,
+	);
 	const gap = (chartW / data.length) * 0.3;
 
 	const yScale = scaleLinear([0, maxTotal], [chartH, 0]);
@@ -55,9 +60,9 @@ export function DailyTokenChart({
 	const labelInterval = Math.max(1, Math.ceil(data.length / 12));
 
 	return (
-		<div class="mb-4 overflow-x-auto">
+		<div class="mb-4 overflow-x-auto" style={`max-width:${width}px`}>
 			<svg
-				viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+				viewBox={`0 0 ${width} ${HEIGHT}`}
 				width="100%"
 				role="img"
 				aria-label="Daily Token Usage Chart"
@@ -71,7 +76,7 @@ export function DailyTokenChart({
 							<line
 								x1={PADDING.left}
 								y1={y}
-								x2={WIDTH - PADDING.right}
+								x2={width - PADDING.right}
 								y2={y}
 								stroke="#374151"
 								stroke-width="1"
@@ -135,7 +140,11 @@ export function DailyTokenChart({
 
 				{/* 凡例 */}
 				{TOKEN_KEYS.map((key, i) => {
-					const lx = PADDING.left + i * 120;
+					const legendSpacing = Math.min(
+						120,
+						(width - PADDING.left - 20) / TOKEN_KEYS.length,
+					);
+					const lx = PADDING.left + i * legendSpacing;
 					const ly = HEIGHT - 12;
 					return (
 						<g key={`legend-${key}`}>
