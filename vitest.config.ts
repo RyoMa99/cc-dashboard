@@ -14,6 +14,7 @@ export default defineWorkersConfig(async () => {
 					miniflare: {
 						bindings: {
 							TEST_MIGRATIONS: migrations,
+							AUTH_TOKEN: "test-token",
 						},
 					},
 				},
