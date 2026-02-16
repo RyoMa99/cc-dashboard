@@ -1,26 +1,10 @@
+import {
+	formatCost,
+	formatDuration,
+	formatTime,
+	formatTokens,
+} from "../lib/format";
 import type { SessionRow } from "../queries/dashboard";
-
-function formatCost(usd: number): string {
-	return `$${usd.toFixed(4)}`;
-}
-
-function formatTokens(n: number): string {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-	return String(n);
-}
-
-function formatTime(ms: number): string {
-	const d = new Date(ms);
-	return d.toISOString().replace("T", " ").slice(0, 19);
-}
-
-function formatDuration(firstMs: number, lastMs: number): string {
-	const diff = lastMs - firstMs;
-	if (diff < 60_000) return `${Math.round(diff / 1000)}s`;
-	if (diff < 3_600_000) return `${Math.round(diff / 60_000)}m`;
-	return `${(diff / 3_600_000).toFixed(1)}h`;
-}
 
 export function RecentSessions({ sessions }: { sessions: SessionRow[] }) {
 	if (sessions.length === 0) {
@@ -52,7 +36,12 @@ export function RecentSessions({ sessions }: { sessions: SessionRow[] }) {
 						{sessions.map((s) => (
 							<tr key={s.sessionId} class="border-b border-gray-800">
 								<td class="px-4 py-2 font-mono text-xs max-w-[200px] truncate">
-									{s.sessionId}
+									<a
+										href={`/session/${s.sessionId}`}
+										class="text-blue-400 hover:text-blue-300 hover:underline"
+									>
+										{s.sessionId}
+									</a>
 								</td>
 								<td class="px-4 py-2 text-right">{formatCost(s.totalCost)}</td>
 								<td class="px-4 py-2 text-right">
