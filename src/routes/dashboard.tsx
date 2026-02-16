@@ -4,33 +4,65 @@ import { DailyTokens } from "../components/DailyTokens";
 import { Layout } from "../components/Layout";
 import { Overview } from "../components/Overview";
 import { RecentSessions } from "../components/RecentSessions";
+import { RepositoryCosts } from "../components/RepositoryCosts";
+import { RepositoryFilter } from "../components/RepositoryFilter";
 import { SessionTimeline } from "../components/SessionTimeline";
 import { ToolUsage } from "../components/ToolUsage";
 import {
+	type RepoFilter,
 	getDailyCosts,
 	getDailyTokens,
+	getDistinctRepositories,
 	getOverviewStats,
 	getRecentSessions,
+	getRepositoryCosts,
 	getToolUsage,
 } from "../queries/dashboard";
 import { getSessionInfo, getSessionTimeline } from "../queries/session";
 import type { Bindings } from "../types/env";
 
+const UNCATEGORIZED_PARAM = "__uncategorized__";
+
 const dashboard = new Hono<{ Bindings: Bindings }>();
 
 dashboard.get("/", async (c) => {
-	const [stats, dailyCosts, dailyTokens, toolUsage, sessions] =
-		await Promise.all([
-			getOverviewStats(c.env.DB),
-			getDailyCosts(c.env.DB),
-			getDailyTokens(c.env.DB),
-			getToolUsage(c.env.DB),
-			getRecentSessions(c.env.DB),
-		]);
+	const repoParam = c.req.query("repo");
+	const repoFilter: RepoFilter =
+		repoParam === undefined
+			? undefined
+			: repoParam === UNCATEGORIZED_PARAM
+				? null
+				: repoParam;
+
+	const [
+		stats,
+		dailyCosts,
+		dailyTokens,
+		toolUsage,
+		sessions,
+		repoCosts,
+		repositories,
+	] = await Promise.all([
+		getOverviewStats(c.env.DB, repoFilter),
+		getDailyCosts(c.env.DB, 30, repoFilter),
+		getDailyTokens(c.env.DB, 30, repoFilter),
+		getToolUsage(c.env.DB, repoFilter),
+		getRecentSessions(c.env.DB, 20, repoFilter),
+		getRepositoryCosts(c.env.DB),
+		getDistinctRepositories(c.env.DB),
+	]);
+
+	const hasUncategorized = repoCosts.some((r) => r.repository === "未分類");
 
 	return c.html(
 		<Layout>
+			<RepositoryFilter
+				repositories={repositories}
+				currentRepo={repoFilter}
+				hasUncategorized={hasUncategorized}
+			/>
 			<Overview stats={stats} />
+			<RepositoryCosts rows={repoCosts} />
 			<DailyTokens rows={dailyTokens} />
 			<DailyCosts rows={dailyCosts} />
 			<ToolUsage tools={toolUsage} />
