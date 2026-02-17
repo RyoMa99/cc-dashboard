@@ -208,10 +208,13 @@ AUTH_TOKEN=dummy
     "OTEL_LOGS_EXPORTER": "otlp",
     "OTEL_EXPORTER_OTLP_PROTOCOL": "http/json",
     "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:8787",
-    "OTEL_EXPORTER_OTLP_HEADERS": "Authorization=Bearer dummy"
+    "OTEL_EXPORTER_OTLP_HEADERS": "Authorization=Bearer dummy",
+    "OTEL_LOG_TOOL_DETAILS": "1"
   }
 }
 ```
+
+`OTEL_LOG_TOOL_DETAILS=1` を設定すると、MCP ツール名（`mcp_server_name`, `mcp_tool_name`）やスキル名（`skill_name`）がダッシュボードに表示される。未設定の場合、MCP ツールは `mcp_tool` としてまとめて表示される。
 
 ### リポジトリ別フィルタの設定
 
