@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/",
     "db:migrate:local": "wrangler d1 migrations apply cc-dashboard-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply cc-dashboard-db --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply cc-dashboard-db --remote",
+    "db:seed": "tsx scripts/seed.ts && wrangler d1 execute cc-dashboard-db --local --file=scripts/.seed.sql"
   },
   "dependencies": {
     "hono": "^4.7.0"
@@ -28,6 +29,7 @@
     "@biomejs/biome": "^1.9.0",
     "@cloudflare/vitest-pool-workers": "^0.8.0",
     "@cloudflare/workers-types": "^4.20250204.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^3.0.0",
     "wrangler": "^4.0.0"
