@@ -150,6 +150,10 @@ function parseToolResult(
 	timestampNs: string,
 	timestampMs: number,
 ): ParsedToolResult {
+	const toolParameters = getStringAttr(attrs, "tool_parameters") ?? null;
+	const { mcpServerName, mcpToolName, skillName } =
+		extractToolDetails(toolParameters);
+
 	return {
 		sessionId,
 		eventSequence,
@@ -159,10 +163,36 @@ function parseToolResult(
 		success: getStringAttr(attrs, "success") !== "false",
 		durationMs: getIntAttr(attrs, "duration_ms") ?? 0,
 		error: getStringAttr(attrs, "error") ?? null,
-		decision: getStringAttr(attrs, "decision") ?? null,
-		source: getStringAttr(attrs, "source") ?? null,
-		toolParameters: getStringAttr(attrs, "tool_parameters") ?? null,
+		toolParameters,
+		mcpServerName,
+		mcpToolName,
+		skillName,
 	};
+}
+
+function extractToolDetails(toolParameters: string | null): {
+	mcpServerName: string | null;
+	mcpToolName: string | null;
+	skillName: string | null;
+} {
+	if (!toolParameters) {
+		return { mcpServerName: null, mcpToolName: null, skillName: null };
+	}
+	try {
+		const parsed = JSON.parse(toolParameters);
+		return {
+			mcpServerName:
+				typeof parsed.mcp_server_name === "string"
+					? parsed.mcp_server_name
+					: null,
+			mcpToolName:
+				typeof parsed.mcp_tool_name === "string" ? parsed.mcp_tool_name : null,
+			skillName:
+				typeof parsed.skill_name === "string" ? parsed.skill_name : null,
+		};
+	} catch {
+		return { mcpServerName: null, mcpToolName: null, skillName: null };
+	}
 }
 
 function parseApiError(

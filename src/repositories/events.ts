@@ -51,8 +51,8 @@ export async function insertToolResults(
 
 	const stmt = db.prepare(
 		`INSERT INTO tool_results
-			(session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, success, duration_ms, error, decision, source, tool_parameters)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			(session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, success, duration_ms, error, tool_parameters, mcp_server_name, mcp_tool_name, skill_name)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 	);
 
 	await db.batch(
@@ -66,9 +66,10 @@ export async function insertToolResults(
 				r.success ? 1 : 0,
 				r.durationMs,
 				r.error,
-				r.decision,
-				r.source,
 				r.toolParameters,
+				r.mcpServerName,
+				r.mcpToolName,
+				r.skillName,
 			),
 		),
 	);

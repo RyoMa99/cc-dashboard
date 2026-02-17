@@ -48,9 +48,10 @@ function makeToolResult(
 		success: true,
 		durationMs: 50,
 		error: null,
-		decision: "accept",
-		source: "config",
 		toolParameters: null,
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
 		...overrides,
 	};
 }
@@ -161,9 +162,10 @@ describe("insertToolResults", () => {
 		expect(row?.success).toBe(1);
 		expect(row?.duration_ms).toBe(50);
 		expect(row?.error).toBeNull();
-		expect(row?.decision).toBe("accept");
-		expect(row?.source).toBe("config");
 		expect(row?.tool_parameters).toBeNull();
+		expect(row?.mcp_server_name).toBeNull();
+		expect(row?.mcp_tool_name).toBeNull();
+		expect(row?.skill_name).toBeNull();
 	});
 
 	it("tool_parameters を格納する", async () => {
