@@ -1,4 +1,4 @@
-name = "cc-dashboard"
+name = "cc-dashboard-v2"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
