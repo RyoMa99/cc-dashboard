@@ -62,6 +62,36 @@ describe("getToolDisplayInfo", () => {
 		});
 	});
 
+	it("MCP: toolName='mcp_tool' かつ mcpServerName=NULL（旧データ）", () => {
+		const result = getToolDisplayInfo(
+			makeRow({
+				toolName: "mcp_tool",
+				mcpServerName: null,
+				mcpToolName: null,
+			}),
+		);
+		expect(result).toEqual({
+			displayName: "mcp_tool",
+			category: "mcp",
+			serverName: null,
+		});
+	});
+
+	it("MCP: toolName='mcp_tool' かつ mcpServerName あり → case 1 で処理", () => {
+		const result = getToolDisplayInfo(
+			makeRow({
+				toolName: "mcp_tool",
+				mcpServerName: "chrome-devtools",
+				mcpToolName: "navigate_page",
+			}),
+		);
+		expect(result).toEqual({
+			displayName: "navigate_page",
+			category: "mcp",
+			serverName: "chrome-devtools",
+		});
+	});
+
 	it("Skill: skillName あり", () => {
 		const result = getToolDisplayInfo(
 			makeRow({

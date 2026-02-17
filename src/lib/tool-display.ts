@@ -32,7 +32,16 @@ export function getToolDisplayInfo(row: ToolUsageRow): ToolDisplayInfo {
 		}
 	}
 
-	// 3. skillName あり → Skill
+	// 3. toolName === "mcp_tool"（OTEL_LOG_TOOL_DETAILS 無効時の旧データ）
+	if (row.toolName === "mcp_tool") {
+		return {
+			displayName: "mcp_tool",
+			category: "mcp",
+			serverName: null,
+		};
+	}
+
+	// 4. skillName あり → Skill
 	if (row.skillName) {
 		return {
 			displayName: row.skillName,
@@ -41,7 +50,7 @@ export function getToolDisplayInfo(row: ToolUsageRow): ToolDisplayInfo {
 		};
 	}
 
-	// 4. toolName === "Skill" → Skill（skillName なし）
+	// 5. toolName === "Skill" → Skill（skillName なし）
 	if (row.toolName === "Skill") {
 		return {
 			displayName: "Skill",
@@ -50,7 +59,7 @@ export function getToolDisplayInfo(row: ToolUsageRow): ToolDisplayInfo {
 		};
 	}
 
-	// 5. それ以外 → builtin
+	// 6. それ以外 → builtin
 	return {
 		displayName: row.toolName,
 		category: "builtin",

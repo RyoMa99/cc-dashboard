@@ -211,7 +211,7 @@ export async function getToolUsage(
 			FROM tool_results tr
 			${repoJoin.join}
 			WHERE 1=1 ${repoJoin.where}
-			GROUP BY tr.tool_name, tr.skill_name
+			GROUP BY tr.tool_name, tr.mcp_server_name, tr.mcp_tool_name, tr.skill_name
 			ORDER BY call_count DESC`,
 		)
 		.bind(...repoJoin.binds)
