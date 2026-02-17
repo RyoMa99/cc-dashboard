@@ -8,8 +8,10 @@ export function formatTokens(n: number): string {
 	return String(n);
 }
 
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 export function formatTime(ms: number): string {
-	const d = new Date(ms);
+	const d = new Date(ms + JST_OFFSET_MS);
 	return d.toISOString().replace("T", " ").slice(0, 19);
 }
 

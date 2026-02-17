@@ -7,7 +7,7 @@ Claude Code の OpenTelemetry データを受信・可視化する個人向け�
 - **ランタイム**: Cloudflare Workers
 - **DB**: Cloudflare D1
 - **フレームワーク**: Hono (JSX SSR)
-- **テスト**: Vitest + @cloudflare/vitest-pool-workers
+- **テスト**: Vitest + @cloudflare/vitest-pool-workers（テストファイルはソースと同階層に co-locate: `src/lib/format.test.ts`）
 - **lint/format**: Biome
 
 ## ローカル開発

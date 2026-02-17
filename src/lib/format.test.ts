@@ -40,9 +40,14 @@ describe("formatTokens", () => {
 });
 
 describe("formatTime", () => {
-	it("ISO形式の日時を空白区切りで表示する", () => {
+	it("UTC の時刻を JST (UTC+9) に変換して表示する", () => {
 		const ms = new Date("2025-01-15T12:00:00Z").getTime();
-		expect(formatTime(ms)).toBe("2025-01-15 12:00:00");
+		expect(formatTime(ms)).toBe("2025-01-15 21:00:00");
+	});
+
+	it("UTC 20:00 は JST で翌日 05:00 になる", () => {
+		const ms = new Date("2025-01-15T20:00:00Z").getTime();
+		expect(formatTime(ms)).toBe("2025-01-16 05:00:00");
 	});
 });
 
