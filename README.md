@@ -236,9 +236,12 @@ AUTH_TOKEN=dummy
 
 ### デプロイ
 
+main ブランチへのマージで Git 連携による自動デプロイが実行される（マイグレーション含む）。
+
+初回セットアップのみ手動で実施：
+
 ```bash
 pnpm wrangler d1 create <db-name>    # D1 作成 → wrangler.toml に ID 設定
 pnpm db:migrate:remote                # マイグレーション適用
 echo "<token>" | pnpm wrangler secret put AUTH_TOKEN
-pnpm run deploy
 ```

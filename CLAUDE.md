@@ -32,13 +32,13 @@ pnpm db:seed      # サンプルデータ投入（7日分、~28セッション�
 
 ## デプロイ
 
-```bash
-pnpm db:migrate:remote   # 1. D1 マイグレーション適用（先に実行）
-pnpm run deploy          # 2. Worker コードのデプロイ（※ pnpm deploy ではない）
+main ブランチへのマージで **Git 連携による自動デプロイ**が実行される。デプロイコマンドにマイグレーションが含まれているため、スキーマ変更も自動適用される。
+
+```
+npx wrangler d1 migrations apply cc-dashboard-db --remote && npx wrangler deploy
 ```
 
-- **マイグレーションを先に実行する**。新しいテーブル/カラムを参照するコードが先にデプロイされるとランタイムエラーになる
-- `pnpm run deploy` は Worker コードのみ。**D1 マイグレーションは含まれない**ため、スキーマ変更がある場合は `pnpm db:migrate:remote` を必ず実行する
+- 手動デプロイが必要な場合: `pnpm db:migrate:remote && pnpm run deploy`
 - マイグレーション未適用の確認: `pnpm wrangler d1 migrations list cc-dashboard-db --remote`
 
 ## プロジェクト固有の検証手順
