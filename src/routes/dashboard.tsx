@@ -62,7 +62,7 @@ dashboard.get("/", async (c) => {
 				hasUncategorized={hasUncategorized}
 			/>
 			<Overview stats={stats} />
-			<RepositoryCosts rows={repoCosts} />
+			{repoFilter === undefined && <RepositoryCosts rows={repoCosts} />}
 			<DailyTokens rows={dailyTokens} />
 			<DailyCosts rows={dailyCosts} />
 			<ToolUsage tools={toolUsage} />
