@@ -15,6 +15,7 @@ Claude Code の OpenTelemetry データを受信・可視化する個人向け�
 ```bash
 pnpm dev          # wrangler dev（ポートはログで確認、デフォルト 8787 or 8788）
 pnpm db:migrate:local  # D1 マイグレーション適用
+pnpm db:seed      # サンプルデータ投入（7日分、~28セッション。冪等、何度でも実行可）
 ```
 
 - 環境変数は `.dev.vars` で管理（`AUTH_TOKEN=dummy`）
