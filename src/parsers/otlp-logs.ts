@@ -1,5 +1,4 @@
 import type {
-	ParseLogsResult,
 	ParsedApiError,
 	ParsedApiRequest,
 	ParsedLogEvent,
@@ -7,6 +6,7 @@ import type {
 	ParsedToolDecision,
 	ParsedToolResult,
 	ParsedUserPrompt,
+	ParseLogsResult,
 } from "../types/domain";
 import type {
 	AnyValue,

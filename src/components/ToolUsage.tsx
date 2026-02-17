@@ -1,4 +1,4 @@
-import { type ToolDisplayInfo, getToolDisplayInfo } from "../lib/tool-display";
+import { getToolDisplayInfo, type ToolDisplayInfo } from "../lib/tool-display";
 import type { ToolUsageRow } from "../queries/dashboard";
 import { ToolUsageChart } from "./charts/ToolUsageChart";
 

@@ -10,7 +10,10 @@ import type { SessionInfo, TimelineEvent } from "../queries/session";
 function Badge({
 	label,
 	color,
-}: { label: string; color: "green" | "red" | "yellow" | "blue" | "gray" }) {
+}: {
+	label: string;
+	color: "green" | "red" | "yellow" | "blue" | "gray";
+}) {
 	const colors = {
 		green: "bg-green-900 text-green-300 border-green-700",
 		red: "bg-red-900 text-red-300 border-red-700",
@@ -30,7 +33,10 @@ function Badge({
 function EventLabel({
 	label,
 	color,
-}: { label: string; color: "green" | "red" | "yellow" | "blue" }) {
+}: {
+	label: string;
+	color: "green" | "red" | "yellow" | "blue";
+}) {
 	const colors = {
 		green: "text-green-400",
 		red: "text-red-400",
@@ -226,7 +232,10 @@ function EventCard({ event }: { event: TimelineEvent }) {
 export function SessionTimeline({
 	session,
 	events,
-}: { session: SessionInfo; events: TimelineEvent[] }) {
+}: {
+	session: SessionInfo;
+	events: TimelineEvent[];
+}) {
 	return (
 		<section>
 			<div class="mb-6">

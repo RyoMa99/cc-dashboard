@@ -1,11 +1,11 @@
 import type { DailyCostRow } from "../../queries/dashboard";
 import {
-	MAX_BAR_WIDTH,
-	MODEL_COLORS,
-	PADDING,
 	calcDailyChartWidth,
 	formatCostAxis,
+	MAX_BAR_WIDTH,
+	MODEL_COLORS,
 	niceMax,
+	PADDING,
 	scaleLinear,
 } from "./chart-utils";
 
@@ -56,7 +56,9 @@ function groupByDate(rows: DailyCostRow[]): {
 
 export function DailyCostChart({
 	rows,
-}: { rows: DailyCostRow[] }): ReturnType<typeof Object> | null {
+}: {
+	rows: DailyCostRow[];
+}): ReturnType<typeof Object> | null {
 	if (rows.length === 0) return null;
 
 	const { groups, models } = groupByDate(rows);

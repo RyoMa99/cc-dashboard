@@ -8,12 +8,12 @@ import type {
 	ParsedUserPrompt,
 } from "../types/domain";
 import {
-	type SessionUpsertData,
 	insertApiErrors,
 	insertApiRequests,
 	insertToolDecisions,
 	insertToolResults,
 	insertUserPrompts,
+	type SessionUpsertData,
 	upsertSessions,
 } from "./events";
 

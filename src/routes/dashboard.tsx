@@ -9,7 +9,6 @@ import { RepositoryFilter } from "../components/RepositoryFilter";
 import { SessionTimeline } from "../components/SessionTimeline";
 import { ToolUsage } from "../components/ToolUsage";
 import {
-	type RepoFilter,
 	getDailyCosts,
 	getDailyTokens,
 	getDistinctRepositories,
@@ -17,6 +16,7 @@ import {
 	getRecentSessions,
 	getRepositoryCosts,
 	getToolUsage,
+	type RepoFilter,
 } from "../queries/dashboard";
 import { getSessionInfo, getSessionTimeline } from "../queries/session";
 import type { Bindings } from "../types/env";

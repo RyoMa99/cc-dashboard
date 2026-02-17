@@ -1,12 +1,12 @@
 import type { DailyTokenRow } from "../../queries/dashboard";
 import {
-	MAX_BAR_WIDTH,
-	PADDING,
-	TOKEN_COLORS,
 	calcDailyChartWidth,
 	formatCompact,
+	MAX_BAR_WIDTH,
 	niceMax,
+	PADDING,
 	scaleLinear,
+	TOKEN_COLORS,
 } from "./chart-utils";
 
 const HEIGHT = 320;
@@ -33,7 +33,9 @@ function fieldOf(row: DailyTokenRow, key: (typeof TOKEN_KEYS)[number]): number {
 
 export function DailyTokenChart({
 	rows,
-}: { rows: DailyTokenRow[] }): ReturnType<typeof Object> | null {
+}: {
+	rows: DailyTokenRow[];
+}): ReturnType<typeof Object> | null {
 	if (rows.length === 0) return null;
 
 	const data = rows.slice().reverse(); // DESC → ASC
