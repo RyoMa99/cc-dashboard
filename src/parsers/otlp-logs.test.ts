@@ -97,8 +97,6 @@ describe("parseLogsPayload", () => {
 				{ key: "tool_name", value: { stringValue: "Read" } },
 				{ key: "success", value: { stringValue: "true" } },
 				{ key: "duration_ms", value: { intValue: 50 } },
-				{ key: "decision", value: { stringValue: "accept" } },
-				{ key: "source", value: { stringValue: "config" } },
 			]);
 
 			const result = parseLogsPayload(payload);
@@ -109,10 +107,11 @@ describe("parseLogsPayload", () => {
 			expect(data.toolName).toBe("Read");
 			expect(data.success).toBe(true);
 			expect(data.durationMs).toBe(50);
-			expect(data.decision).toBe("accept");
-			expect(data.source).toBe("config");
 			expect(data.error).toBeNull();
 			expect(data.toolParameters).toBeNull();
+			expect(data.mcpServerName).toBeNull();
+			expect(data.mcpToolName).toBeNull();
+			expect(data.skillName).toBeNull();
 		});
 
 		it("失敗ケースをパースする", () => {
@@ -142,6 +141,69 @@ describe("parseLogsPayload", () => {
 			if (result.events[0].type !== "tool_result")
 				throw new Error("unreachable");
 			expect(result.events[0].data.toolParameters).toBe('{"command":"ls"}');
+			expect(result.events[0].data.mcpServerName).toBeNull();
+			expect(result.events[0].data.mcpToolName).toBeNull();
+			expect(result.events[0].data.skillName).toBeNull();
+		});
+
+		it("tool_parameters から MCP サーバー名・ツール名を抽出する", () => {
+			const payload = makeLogPayload("tool_result", [
+				{
+					key: "tool_name",
+					value: { stringValue: "mcp__chrome__click" },
+				},
+				{
+					key: "tool_parameters",
+					value: {
+						stringValue: '{"mcp_server_name":"chrome","mcp_tool_name":"click"}',
+					},
+				},
+			]);
+
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "tool_result")
+				throw new Error("unreachable");
+			const data = result.events[0].data;
+			expect(data.mcpServerName).toBe("chrome");
+			expect(data.mcpToolName).toBe("click");
+			expect(data.skillName).toBeNull();
+		});
+
+		it("tool_parameters から skill_name を抽出する", () => {
+			const payload = makeLogPayload("tool_result", [
+				{ key: "tool_name", value: { stringValue: "Skill" } },
+				{
+					key: "tool_parameters",
+					value: { stringValue: '{"skill_name":"commit"}' },
+				},
+			]);
+
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "tool_result")
+				throw new Error("unreachable");
+			const data = result.events[0].data;
+			expect(data.skillName).toBe("commit");
+			expect(data.mcpServerName).toBeNull();
+			expect(data.mcpToolName).toBeNull();
+		});
+
+		it("不正な JSON の tool_parameters では全フィールドが null になる", () => {
+			const payload = makeLogPayload("tool_result", [
+				{ key: "tool_name", value: { stringValue: "Read" } },
+				{
+					key: "tool_parameters",
+					value: { stringValue: "not-json" },
+				},
+			]);
+
+			const result = parseLogsPayload(payload);
+			if (result.events[0].type !== "tool_result")
+				throw new Error("unreachable");
+			const data = result.events[0].data;
+			expect(data.toolParameters).toBe("not-json");
+			expect(data.mcpServerName).toBeNull();
+			expect(data.mcpToolName).toBeNull();
+			expect(data.skillName).toBeNull();
 		});
 	});
 

@@ -1,3 +1,4 @@
+import { getToolDisplayInfo } from "../../lib/tool-display";
 import type { ToolUsageRow } from "../../queries/dashboard";
 import { BAR_COLOR } from "./chart-utils";
 
@@ -10,6 +11,21 @@ const PADDING_BOTTOM = 10;
 const LABEL_WIDTH = 160;
 const BAR_LEFT = 170;
 const VALUE_OFFSET = 10;
+const LABEL_MAX_CHARS = 22;
+
+function formatChartLabel(row: ToolUsageRow): string {
+	const info = getToolDisplayInfo(row);
+	if (info.category === "mcp" && info.serverName) {
+		const label = `${info.serverName}/${info.displayName}`;
+		return label.length > LABEL_MAX_CHARS
+			? `${label.slice(0, LABEL_MAX_CHARS)}…`
+			: label;
+	}
+	const name = info.displayName;
+	return name.length > LABEL_MAX_CHARS
+		? `${name.slice(0, LABEL_MAX_CHARS)}…`
+		: name;
+}
 
 export function ToolUsageChart({
 	tools,
@@ -41,8 +57,12 @@ export function ToolUsageChart({
 					const y = PADDING_TOP + i * ROW_HEIGHT;
 					const barW =
 						maxCount > 0 ? (tool.callCount / maxCount) * barMaxWidth : 0;
+					const label = formatChartLabel(tool);
+					const info = getToolDisplayInfo(tool);
+					const key =
+						tool.toolName + (tool.skillName ?? "") + (tool.mcpToolName ?? "");
 					return (
-						<g key={tool.toolName}>
+						<g key={key}>
 							{/* ツール名 */}
 							<text
 								x={LABEL_WIDTH}
@@ -52,9 +72,7 @@ export function ToolUsageChart({
 								text-anchor="end"
 								dominant-baseline="middle"
 							>
-								{tool.toolName.length > 22
-									? `${tool.toolName.slice(0, 22)}…`
-									: tool.toolName}
+								{label}
 							</text>
 							{/* 水平棒 */}
 							<rect
@@ -66,8 +84,8 @@ export function ToolUsageChart({
 								rx="3"
 							>
 								<title>
-									{tool.toolName}: {tool.callCount} calls, {tool.successRate}%,
-									avg {tool.avgDurationMs}ms
+									{info.displayName}: {tool.callCount} calls, {tool.successRate}
+									%, avg {tool.avgDurationMs}ms
 								</title>
 							</rect>
 							{/* 数値ラベル */}

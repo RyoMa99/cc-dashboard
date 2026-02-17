@@ -1,5 +1,24 @@
+import { type ToolDisplayInfo, getToolDisplayInfo } from "../lib/tool-display";
 import type { ToolUsageRow } from "../queries/dashboard";
 import { ToolUsageChart } from "./charts/ToolUsageChart";
+
+function CategoryBadge({ info }: { info: ToolDisplayInfo }) {
+	if (info.category === "mcp") {
+		return (
+			<span class="inline-block ml-2 px-1.5 py-0.5 text-xs rounded bg-purple-900 text-purple-300 border border-purple-700">
+				{info.serverName ? `MCP: ${info.serverName}` : "MCP"}
+			</span>
+		);
+	}
+	if (info.category === "skill") {
+		return (
+			<span class="inline-block ml-2 px-1.5 py-0.5 text-xs rounded bg-amber-900 text-amber-300 border border-amber-700">
+				Skill
+			</span>
+		);
+	}
+	return null;
+}
 
 export function ToolUsage({ tools }: { tools: ToolUsageRow[] }) {
 	if (tools.length === 0) {
@@ -26,26 +45,36 @@ export function ToolUsage({ tools }: { tools: ToolUsageRow[] }) {
 						</tr>
 					</thead>
 					<tbody>
-						{tools.map((tool) => (
-							<tr key={tool.toolName} class="border-b border-gray-800">
-								<td class="px-4 py-2 font-mono">{tool.toolName}</td>
-								<td class="px-4 py-2 text-right">{tool.callCount}</td>
-								<td class="px-4 py-2 text-right">
-									<span
-										class={
-											tool.successRate >= 95
-												? "text-green-400"
-												: tool.successRate >= 80
-													? "text-yellow-400"
-													: "text-red-400"
-										}
-									>
-										{tool.successRate}%
-									</span>
-								</td>
-								<td class="px-4 py-2 text-right">{tool.avgDurationMs}ms</td>
-							</tr>
-						))}
+						{tools.map((tool) => {
+							const info = getToolDisplayInfo(tool);
+							const key =
+								tool.toolName +
+								(tool.skillName ?? "") +
+								(tool.mcpToolName ?? "");
+							return (
+								<tr key={key} class="border-b border-gray-800">
+									<td class="px-4 py-2 font-mono">
+										{info.displayName}
+										<CategoryBadge info={info} />
+									</td>
+									<td class="px-4 py-2 text-right">{tool.callCount}</td>
+									<td class="px-4 py-2 text-right">
+										<span
+											class={
+												tool.successRate >= 95
+													? "text-green-400"
+													: tool.successRate >= 80
+														? "text-yellow-400"
+														: "text-red-400"
+											}
+										>
+											{tool.successRate}%
+										</span>
+									</td>
+									<td class="px-4 py-2 text-right">{tool.avgDurationMs}ms</td>
+								</tr>
+							);
+						})}
 					</tbody>
 				</table>
 			</div>

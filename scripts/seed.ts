@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // --- Constants ---
@@ -24,15 +24,109 @@ const REPOSITORIES = [
 	{ name: null, weight: 0.2 },
 ] as const;
 
-const TOOLS = [
-	"Read",
-	"Edit",
-	"Write",
-	"Bash",
-	"Grep",
-	"Glob",
-	"Task",
-	"WebFetch",
+type ToolDef = {
+	toolName: string;
+	mcpServerName: string | null;
+	mcpToolName: string | null;
+	skillName: string | null;
+	weight: number;
+};
+
+const TOOLS: ToolDef[] = [
+	// Builtin ツール
+	{
+		toolName: "Read",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.2,
+	},
+	{
+		toolName: "Edit",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.15,
+	},
+	{
+		toolName: "Write",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.08,
+	},
+	{
+		toolName: "Bash",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.15,
+	},
+	{
+		toolName: "Grep",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.1,
+	},
+	{
+		toolName: "Glob",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.08,
+	},
+	{
+		toolName: "Task",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.04,
+	},
+	// MCP ツール
+	{
+		toolName: "mcp__serena__find_symbol",
+		mcpServerName: "serena",
+		mcpToolName: "find_symbol",
+		skillName: null,
+		weight: 0.04,
+	},
+	{
+		toolName: "mcp__serena__get_symbols_overview",
+		mcpServerName: "serena",
+		mcpToolName: "get_symbols_overview",
+		skillName: null,
+		weight: 0.03,
+	},
+	{
+		toolName: "mcp__chrome-devtools__take_screenshot",
+		mcpServerName: "chrome-devtools",
+		mcpToolName: "take_screenshot",
+		skillName: null,
+		weight: 0.03,
+	},
+	// Skill ツール
+	{
+		toolName: "Skill",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: "commit",
+		weight: 0.04,
+	},
+	{
+		toolName: "Skill",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: "TDD",
+		weight: 0.03,
+	},
+	{
+		toolName: "Skill",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: "finish",
+		weight: 0.03,
+	},
 ];
 
 const PROMPTS = [
@@ -79,9 +173,7 @@ function pick<T>(arr: readonly T[]): T {
 	return arr[randInt(0, arr.length - 1)];
 }
 
-function weightedPick<T extends { weight: number }>(
-	items: readonly T[],
-): T {
+function weightedPick<T extends { weight: number }>(items: readonly T[]): T {
 	const r = Math.random();
 	let cumulative = 0;
 	for (const item of items) {
@@ -112,6 +204,17 @@ function uuid(): string {
 	});
 }
 
+function buildToolParameters(tool: ToolDef): string | null {
+	const params: Record<string, string> = {};
+	if (tool.mcpServerName) params.mcp_server_name = tool.mcpServerName;
+	if (tool.mcpToolName) params.mcp_tool_name = tool.mcpToolName;
+	if (tool.skillName) params.skill_name = tool.skillName;
+	if (tool.toolName === "Bash")
+		params.command = pick(["ls", "git status", "pnpm test", "cat README.md"]);
+	if (Object.keys(params).length === 0) return null;
+	return JSON.stringify(params);
+}
+
 // --- Data Generation ---
 
 type EventRecord = {
@@ -132,7 +235,7 @@ function generateSession(
 	// Spread sessions across the day (9:00-21:00 range)
 	const sessionStartOffset =
 		(9 * 60 + sessionIndex * randInt(60, 180)) * 60 * 1000;
-	const sessionStart = dayStart - (24 * 60 * 60 * 1000) + sessionStartOffset;
+	const sessionStart = dayStart - 24 * 60 * 60 * 1000 + sessionStartOffset;
 	const sessionDurationMs = randInt(10, 60) * 60 * 1000; // 10-60 minutes
 
 	const events: EventRecord[] = [];
@@ -162,7 +265,9 @@ function generateSession(
 	for (let i = 0; i < apiRequestCount; i++) {
 		const progress = i / apiRequestCount;
 		const timestampMs =
-			sessionStart + Math.floor(progress * sessionDurationMs) + randInt(0, 30000);
+			sessionStart +
+			Math.floor(progress * sessionDurationMs) +
+			randInt(0, 30000);
 		const timestampNs = `${timestampMs}000000`;
 		const model = pickModel();
 		const [costMin, costMax] = MODELS[model].costRange;
@@ -178,19 +283,20 @@ function generateSession(
 	for (let i = 0; i < toolResultCount; i++) {
 		const progress = i / toolResultCount;
 		const timestampMs =
-			sessionStart + Math.floor(progress * sessionDurationMs) + randInt(0, 30000);
+			sessionStart +
+			Math.floor(progress * sessionDurationMs) +
+			randInt(0, 30000);
 		const timestampNs = `${timestampMs}000000`;
-		const toolName = pick(TOOLS);
+		const tool = weightedPick(TOOLS);
 		const success = Math.random() < 0.9;
 		const durationMs = randInt(50, 2000);
 		const error = success ? null : "Command failed with exit code 1";
-		const decision = pick(["accept", "reject", null]);
-		const source = pick(["user", "auto", null]);
+		const toolParameters = buildToolParameters(tool);
 
 		events.push({
 			table: "tool_results",
 			timestampMs,
-			sql: `INSERT INTO tool_results (session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, success, duration_ms, error, decision, source, tool_parameters) VALUES (${sqlEscape(sessionId)}, NULL, ${sqlEscape(timestampNs)}, ${timestampMs}, ${sqlEscape(toolName)}, ${success ? 1 : 0}, ${durationMs}, ${sqlEscape(error)}, ${sqlEscape(decision)}, ${sqlEscape(source)}, NULL);`,
+			sql: `INSERT INTO tool_results (session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, success, duration_ms, error, tool_parameters, mcp_server_name, mcp_tool_name, skill_name) VALUES (${sqlEscape(sessionId)}, NULL, ${sqlEscape(timestampNs)}, ${timestampMs}, ${sqlEscape(tool.toolName)}, ${success ? 1 : 0}, ${durationMs}, ${sqlEscape(error)}, ${sqlEscape(toolParameters)}, ${sqlEscape(tool.mcpServerName)}, ${sqlEscape(tool.mcpToolName)}, ${sqlEscape(tool.skillName)});`,
 		});
 	}
 
@@ -198,24 +304,25 @@ function generateSession(
 	for (let i = 0; i < toolDecisionCount; i++) {
 		const progress = i / toolDecisionCount;
 		const timestampMs =
-			sessionStart + Math.floor(progress * sessionDurationMs) + randInt(0, 30000);
+			sessionStart +
+			Math.floor(progress * sessionDurationMs) +
+			randInt(0, 30000);
 		const timestampNs = `${timestampMs}000000`;
-		const toolName = pick(TOOLS);
+		const tool = weightedPick(TOOLS);
 		const decision = Math.random() < 0.85 ? "accept" : "reject";
 		const source = pick(["user", "auto", "always_allow"]);
 
 		events.push({
 			table: "tool_decisions",
 			timestampMs,
-			sql: `INSERT INTO tool_decisions (session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, decision, source) VALUES (${sqlEscape(sessionId)}, NULL, ${sqlEscape(timestampNs)}, ${timestampMs}, ${sqlEscape(toolName)}, ${sqlEscape(decision)}, ${sqlEscape(source)});`,
+			sql: `INSERT INTO tool_decisions (session_id, event_sequence, timestamp_ns, timestamp_ms, tool_name, decision, source) VALUES (${sqlEscape(sessionId)}, NULL, ${sqlEscape(timestampNs)}, ${timestampMs}, ${sqlEscape(tool.toolName)}, ${sqlEscape(decision)}, ${sqlEscape(source)});`,
 		});
 	}
 
 	// API error (rare)
 	if (hasApiError) {
 		const timestampMs =
-			sessionStart +
-			Math.floor(randFloat(0.3, 0.8) * sessionDurationMs);
+			sessionStart + Math.floor(randFloat(0.3, 0.8) * sessionDurationMs);
 		const timestampNs = `${timestampMs}000000`;
 		const model = pickModel();
 		const errorMsg = pick(ERROR_MESSAGES);
@@ -231,10 +338,7 @@ function generateSession(
 	// Sort events by timestamp and assign event_sequence
 	events.sort((a, b) => a.timestampMs - b.timestampMs);
 	for (let i = 0; i < events.length; i++) {
-		events[i].sql = events[i].sql.replace(
-			/, NULL, /,
-			`, ${i + 1}, `,
-		);
+		events[i].sql = events[i].sql.replace(/, NULL, /, `, ${i + 1}, `);
 	}
 
 	// Session record

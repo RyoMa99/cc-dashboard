@@ -24,9 +24,10 @@ export type ParsedToolResult = {
 	success: boolean;
 	durationMs: number;
 	error: string | null;
-	decision: string | null;
-	source: string | null;
 	toolParameters: string | null;
+	mcpServerName: string | null;
+	mcpToolName: string | null;
+	skillName: string | null;
 };
 
 export type ParsedUserPrompt = {

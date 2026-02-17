@@ -53,9 +53,10 @@ function makeToolResult(
 		success: true,
 		durationMs: 100,
 		error: null,
-		decision: null,
-		source: null,
 		toolParameters: null,
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
 		...overrides,
 	};
 }

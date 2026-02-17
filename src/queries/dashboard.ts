@@ -33,6 +33,9 @@ export type ToolUsageRow = {
 	successCount: number;
 	successRate: number;
 	avgDurationMs: number;
+	mcpServerName: string | null;
+	mcpToolName: string | null;
+	skillName: string | null;
 };
 
 export type SessionRow = {
@@ -198,6 +201,9 @@ export async function getToolUsage(
 		.prepare(
 			`SELECT
 				tr.tool_name,
+				tr.mcp_server_name,
+				tr.mcp_tool_name,
+				tr.skill_name,
 				COUNT(*) as call_count,
 				SUM(tr.success) as success_count,
 				ROUND(AVG(tr.success) * 100, 1) as success_rate,
@@ -205,7 +211,7 @@ export async function getToolUsage(
 			FROM tool_results tr
 			${repoJoin.join}
 			WHERE 1=1 ${repoJoin.where}
-			GROUP BY tr.tool_name
+			GROUP BY tr.tool_name, tr.mcp_server_name, tr.mcp_tool_name, tr.skill_name
 			ORDER BY call_count DESC`,
 		)
 		.bind(...repoJoin.binds)
@@ -217,6 +223,9 @@ export async function getToolUsage(
 		successCount: row.success_count as number,
 		successRate: row.success_rate as number,
 		avgDurationMs: row.avg_duration_ms as number,
+		mcpServerName: (row.mcp_server_name as string | null) ?? null,
+		mcpToolName: (row.mcp_tool_name as string | null) ?? null,
+		skillName: (row.skill_name as string | null) ?? null,
 	}));
 }
 
