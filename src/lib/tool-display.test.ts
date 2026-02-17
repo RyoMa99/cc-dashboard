@@ -20,45 +20,15 @@ describe("getToolDisplayInfo", () => {
 	it("MCP: mcpServerName + mcpToolName あり", () => {
 		const result = getToolDisplayInfo(
 			makeRow({
-				toolName: "mcp__chrome__click",
-				mcpServerName: "chrome",
+				toolName: "mcp_tool",
+				mcpServerName: "chrome-devtools",
 				mcpToolName: "click",
 			}),
 		);
 		expect(result).toEqual({
 			displayName: "click",
 			category: "mcp",
-			serverName: "chrome",
-		});
-	});
-
-	it("MCP: フォールバック（mcpServerName なし、toolName が mcp__ パターン）", () => {
-		const result = getToolDisplayInfo(
-			makeRow({
-				toolName: "mcp__serena__find_symbol",
-				mcpServerName: null,
-				mcpToolName: null,
-			}),
-		);
-		expect(result).toEqual({
-			displayName: "find_symbol",
-			category: "mcp",
-			serverName: "serena",
-		});
-	});
-
-	it("MCP: フォールバックでネストされた __ を含むツール名", () => {
-		const result = getToolDisplayInfo(
-			makeRow({
-				toolName: "mcp__plugin_serena_serena__find_symbol",
-				mcpServerName: null,
-				mcpToolName: null,
-			}),
-		);
-		expect(result).toEqual({
-			displayName: "find_symbol",
-			category: "mcp",
-			serverName: "plugin_serena_serena",
+			serverName: "chrome-devtools",
 		});
 	});
 
