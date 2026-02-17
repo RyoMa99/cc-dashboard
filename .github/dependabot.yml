@@ -10,6 +10,11 @@ updates:
           - minor
           - patch
     open-pull-requests-limit: 10
+    ignore:
+      # @cloudflare/vitest-pool-workers が Vitest 4 未対応のため保留
+      # 対応状況: https://github.com/cloudflare/workers-sdk/pull/11632
+      - dependency-name: vitest
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
