@@ -83,23 +83,51 @@ const TOOLS: ToolDef[] = [
 		skillName: null,
 		weight: 0.04,
 	},
-	// MCP ツール
 	{
-		toolName: "mcp__serena__find_symbol",
+		toolName: "WebFetch",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.04,
+	},
+	{
+		toolName: "WebSearch",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.02,
+	},
+	{
+		toolName: "AskUserQuestion",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.02,
+	},
+	{
+		toolName: "ToolSearch",
+		mcpServerName: null,
+		mcpToolName: null,
+		skillName: null,
+		weight: 0.01,
+	},
+	// MCP ツール（本番では tool_name は全て "mcp_tool" 固定）
+	{
+		toolName: "mcp_tool",
 		mcpServerName: "serena",
 		mcpToolName: "find_symbol",
 		skillName: null,
 		weight: 0.04,
 	},
 	{
-		toolName: "mcp__serena__get_symbols_overview",
+		toolName: "mcp_tool",
 		mcpServerName: "serena",
 		mcpToolName: "get_symbols_overview",
 		skillName: null,
 		weight: 0.03,
 	},
 	{
-		toolName: "mcp__chrome-devtools__take_screenshot",
+		toolName: "mcp_tool",
 		mcpServerName: "chrome-devtools",
 		mcpToolName: "take_screenshot",
 		skillName: null,
@@ -209,8 +237,20 @@ function buildToolParameters(tool: ToolDef): string | null {
 	if (tool.mcpServerName) params.mcp_server_name = tool.mcpServerName;
 	if (tool.mcpToolName) params.mcp_tool_name = tool.mcpToolName;
 	if (tool.skillName) params.skill_name = tool.skillName;
-	if (tool.toolName === "Bash")
-		params.command = pick(["ls", "git status", "pnpm test", "cat README.md"]);
+	if (tool.toolName === "Bash") {
+		params.bash_command = pick([
+			"ls",
+			"git status",
+			"pnpm test",
+			"cat README.md",
+		]);
+		params.description = pick([
+			"List files",
+			"Show git status",
+			"Run tests",
+			"Read file",
+		]);
+	}
 	if (Object.keys(params).length === 0) return null;
 	return JSON.stringify(params);
 }
@@ -310,7 +350,12 @@ function generateSession(
 		const timestampNs = `${timestampMs}000000`;
 		const tool = weightedPick(TOOLS);
 		const decision = Math.random() < 0.85 ? "accept" : "reject";
-		const source = pick(["user", "auto", "always_allow"]);
+		const source = pick([
+			"config",
+			"user_temporary",
+			"user_permanent",
+			"user_reject",
+		]);
 
 		events.push({
 			table: "tool_decisions",
@@ -326,12 +371,12 @@ function generateSession(
 		const timestampNs = `${timestampMs}000000`;
 		const model = pickModel();
 		const errorMsg = pick(ERROR_MESSAGES);
-		const statusCode = pick([429, 500, 503, 504]);
+		const statusCode = pick([null, 429, 500, 503]);
 
 		events.push({
 			table: "api_errors",
 			timestampMs,
-			sql: `INSERT INTO api_errors (session_id, event_sequence, timestamp_ns, timestamp_ms, model, error, status_code, duration_ms, attempt) VALUES (${sqlEscape(sessionId)}, NULL, ${sqlEscape(timestampNs)}, ${timestampMs}, ${sqlEscape(model)}, ${sqlEscape(errorMsg)}, ${statusCode}, ${randInt(500, 5000)}, 1);`,
+			sql: `INSERT INTO api_errors (session_id, event_sequence, timestamp_ns, timestamp_ms, model, error, status_code, duration_ms, attempt) VALUES (${sqlEscape(sessionId)}, NULL, ${sqlEscape(timestampNs)}, ${timestampMs}, ${sqlEscape(model)}, ${sqlEscape(errorMsg)}, ${statusCode ?? "NULL"}, ${randInt(500, 5000)}, 1);`,
 		});
 	}
 

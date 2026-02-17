@@ -8,8 +8,6 @@ export type ToolDisplayInfo = {
 	serverName: string | null;
 };
 
-const MCP_PREFIX = "mcp__";
-
 export function getToolDisplayInfo(row: ToolUsageRow): ToolDisplayInfo {
 	// 1. mcpServerName あり → MCP ツール
 	if (row.mcpServerName) {
@@ -20,19 +18,7 @@ export function getToolDisplayInfo(row: ToolUsageRow): ToolDisplayInfo {
 		};
 	}
 
-	// 2. toolName が mcp__ 始まり（旧データフォールバック）
-	if (row.toolName.startsWith(MCP_PREFIX)) {
-		const parts = row.toolName.slice(MCP_PREFIX.length).split("__");
-		if (parts.length >= 2) {
-			return {
-				displayName: parts.slice(1).join("__"),
-				category: "mcp",
-				serverName: parts[0],
-			};
-		}
-	}
-
-	// 3. toolName === "mcp_tool"（OTEL_LOG_TOOL_DETAILS 無効時の旧データ）
+	// 2. toolName === "mcp_tool"（mcpServerName なしの旧データ）
 	if (row.toolName === "mcp_tool") {
 		return {
 			displayName: "mcp_tool",
@@ -41,7 +27,7 @@ export function getToolDisplayInfo(row: ToolUsageRow): ToolDisplayInfo {
 		};
 	}
 
-	// 4. skillName あり → Skill
+	// 3. skillName あり → Skill
 	if (row.skillName) {
 		return {
 			displayName: row.skillName,
@@ -50,7 +36,7 @@ export function getToolDisplayInfo(row: ToolUsageRow): ToolDisplayInfo {
 		};
 	}
 
-	// 5. toolName === "Skill" → Skill（skillName なし）
+	// 4. toolName === "Skill" → Skill（skillName なし）
 	if (row.toolName === "Skill") {
 		return {
 			displayName: "Skill",
@@ -59,7 +45,7 @@ export function getToolDisplayInfo(row: ToolUsageRow): ToolDisplayInfo {
 		};
 	}
 
-	// 6. それ以外 → builtin
+	// 5. それ以外 → builtin
 	return {
 		displayName: row.toolName,
 		category: "builtin",
