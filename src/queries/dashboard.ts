@@ -133,7 +133,7 @@ export async function getDailyCosts(
 	const result = await db
 		.prepare(
 			`SELECT
-				date(a.timestamp_ms / 1000, 'unixepoch') as date,
+				date(a.timestamp_ms / 1000, 'unixepoch', '+9 hours') as date,
 				a.model,
 				SUM(a.cost_usd) as cost,
 				COUNT(*) as calls
@@ -165,7 +165,7 @@ export async function getDailyTokens(
 	const result = await db
 		.prepare(
 			`SELECT
-				date(a.timestamp_ms / 1000, 'unixepoch') as date,
+				date(a.timestamp_ms / 1000, 'unixepoch', '+9 hours') as date,
 				SUM(a.input_tokens) as input_tokens,
 				SUM(a.output_tokens) as output_tokens,
 				SUM(a.cache_read_tokens) as cache_read_tokens,

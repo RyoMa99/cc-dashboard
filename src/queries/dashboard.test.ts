@@ -80,9 +80,11 @@ function daysAgoMs(n: number): number {
 	return Date.now() - n * 24 * 60 * 60 * 1000;
 }
 
-/** timestamp_ms を UTC 日付文字列に変換する */
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** timestamp_ms を JST 日付文字列に変換する */
 function msToDateStr(ms: number): string {
-	return new Date(ms).toISOString().slice(0, 10);
+	return new Date(ms + JST_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 describe("getOverviewStats", () => {
