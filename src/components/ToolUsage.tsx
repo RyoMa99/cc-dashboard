@@ -6,7 +6,7 @@ function CategoryBadge({ info }: { info: ToolDisplayInfo }) {
 	if (info.category === "mcp") {
 		return (
 			<span class="inline-block ml-2 px-1.5 py-0.5 text-xs rounded bg-purple-900 text-purple-300 border border-purple-700">
-				MCP: {info.serverName}
+				{info.serverName ? `MCP: ${info.serverName}` : "MCP"}
 			</span>
 		);
 	}
