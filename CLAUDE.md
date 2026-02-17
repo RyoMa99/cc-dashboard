@@ -19,7 +19,7 @@ pnpm db:seed      # サンプルデータ投入（7日分、~28セッション�
 ```
 
 - 環境変数は `.dev.vars` で管理（`AUTH_TOKEN=dummy`）
-- ダッシュボードへのアクセス: `http://localhost:{port}/?token=dummy`
+- ダッシュボードへのアクセス: `http://localhost:{port}/`
 
 ### wrangler dev のポート確認
 
@@ -48,11 +48,8 @@ npx wrangler d1 migrations apply cc-dashboard-db --remote && npx wrangler deploy
 ### API テスト（xh）
 
 ```bash
-# 認証なしアクセス → 401
+# ダッシュボード → 200
 xh --ignore-stdin GET http://localhost:{port}/
-
-# token 付きダッシュボード → 200
-xh --ignore-stdin GET 'http://localhost:{port}/?token=dummy' --follow
 
 # OTLP logs → 200 {"partialSuccess":{}}
 xh --ignore-stdin POST http://localhost:{port}/v1/logs Authorization:"Bearer dummy" --raw '{"resourceLogs":[{"scopeLogs":[{"logRecords":[]}]}]}'
