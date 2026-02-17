@@ -29,7 +29,9 @@ function formatChartLabel(row: ToolUsageRow): string {
 
 export function ToolUsageChart({
 	tools,
-}: { tools: ToolUsageRow[] }): ReturnType<typeof Object> | null {
+}: {
+	tools: ToolUsageRow[];
+}): ReturnType<typeof Object> | null {
 	if (tools.length === 0) return null;
 
 	// callCount 降順でソート（既にクエリで降順だが保証する）

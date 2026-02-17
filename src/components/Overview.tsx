@@ -5,7 +5,11 @@ function Card({
 	label,
 	value,
 	sub,
-}: { label: string; value: string; sub?: string }) {
+}: {
+	label: string;
+	value: string;
+	sub?: string;
+}) {
 	return (
 		<div class="bg-gray-900 rounded-lg border border-gray-700 p-4">
 			<p class="text-sm text-gray-400">{label}</p>

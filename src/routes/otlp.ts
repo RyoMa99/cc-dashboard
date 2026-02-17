@@ -3,12 +3,12 @@ import { bearerAuth } from "../middleware/auth";
 import { parseLogsPayload } from "../parsers/otlp-logs";
 import { parseMetricsPayload } from "../parsers/otlp-metrics";
 import {
-	type SessionUpsertData,
 	insertApiErrors,
 	insertApiRequests,
 	insertToolDecisions,
 	insertToolResults,
 	insertUserPrompts,
+	type SessionUpsertData,
 	upsertSessions,
 } from "../repositories/events";
 import { insertMetricDataPoints } from "../repositories/metrics";

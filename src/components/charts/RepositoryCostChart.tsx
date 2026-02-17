@@ -15,7 +15,9 @@ const VALUE_OFFSET = 10;
 
 export function RepositoryCostChart({
 	rows,
-}: { rows: RepositoryCostRow[] }): ReturnType<typeof Object> | null {
+}: {
+	rows: RepositoryCostRow[];
+}): ReturnType<typeof Object> | null {
 	if (rows.length === 0) return null;
 
 	const sorted = rows.slice().sort((a, b) => b.totalCost - a.totalCost);
