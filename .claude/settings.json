@@ -1,5 +1,5 @@
 {
-  "env": {
-    "OTEL_RESOURCE_ATTRIBUTES": "repository=cc-dashboard"
-  }
+	"env": {
+		"OTEL_RESOURCE_ATTRIBUTES": "repository=cc-dashboard"
+	}
 }
