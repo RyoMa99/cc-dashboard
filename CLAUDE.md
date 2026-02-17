@@ -80,4 +80,5 @@ resourceLogs[]:
 
 - `repository` は resource-level、`session.id` は record-level
 - パーサーで両者を紐づける際は、各 log record の session ID を使うこと（resource-level に session.id は存在しない）
+- `tool_result` の `tool_name`: MCP ツールは全て `"mcp_tool"` 固定（`mcp__<server>__<tool>` ではない）。Skill は `"Skill"` 固定。詳細は `tool_parameters` JSON に依存
 - `tool_result` イベントの `tool_parameters` 属性は JSON 文字列。既知のキー: Bash: `bash_command`, `full_command`, `description`, `timeout` / MCP (`OTEL_LOG_TOOL_DETAILS=1`): `mcp_server_name`, `mcp_tool_name` / Skill (`OTEL_LOG_TOOL_DETAILS=1`): `skill_name`

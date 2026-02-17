@@ -127,8 +127,10 @@ erDiagram
         int success
         int duration_ms
         text error
-        text decision
         text tool_parameters
+        text mcp_server_name
+        text mcp_tool_name
+        text skill_name
         int timestamp_ms
     }
 
