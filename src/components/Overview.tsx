@@ -41,9 +41,14 @@ export function Overview({
     stats.totalCacheReadTokens +
     stats.totalCacheCreationTokens;
 
+  const totalPromptTokens =
+    stats.totalInputTokens +
+    stats.totalCacheReadTokens +
+    stats.totalCacheCreationTokens;
+
   const cacheHitRate =
-    stats.totalInputTokens > 0
-      ? stats.totalCacheReadTokens / stats.totalInputTokens
+    totalPromptTokens > 0
+      ? stats.totalCacheReadTokens / totalPromptTokens
       : Number.NaN;
 
   const roiSub = linesOfCode
