@@ -151,6 +151,127 @@ describe("getOverviewStats", () => {
   });
 });
 
+describe("getOverviewStats - estimatedCacheSavings", () => {
+  it("キャッシュ利用時に推定節約額を正しく計算する", async () => {
+    const now = Date.now();
+    await upsertSessions(env.DB, [
+      {
+        sessionId: "cs-savings",
+        repository: "cache-savings-test",
+        timestampMs: now,
+      },
+    ]);
+    await insertApiRequests(env.DB, [
+      makeApiRequest({
+        sessionId: "cs-savings",
+        eventSequence: 1,
+        timestampMs: now,
+        costUsd: 0.021,
+        inputTokens: 1000,
+        outputTokens: 500,
+        cacheReadTokens: 10000,
+        cacheCreationTokens: 2000,
+      }),
+    ]);
+
+    const stats = await getOverviewStats(env.DB, "cache-savings-test");
+    // savings = 0.021 * (0.9 * 10000 - 0.25 * 2000) / (1000 + 0.1 * 10000 + 1.25 * 2000 + 5 * 500)
+    //         = 0.021 * 8500 / 7000 ≈ 0.0255
+    expect(stats.estimatedCacheSavings).toBeCloseTo(0.0255, 4);
+  });
+
+  it("キャッシュ未使用時は節約額が0以下になる（cache_create オーバーヘッド）", async () => {
+    const now = Date.now();
+    await upsertSessions(env.DB, [
+      {
+        sessionId: "cs-nocache",
+        repository: "no-cache-test",
+        timestampMs: now,
+      },
+    ]);
+    await insertApiRequests(env.DB, [
+      makeApiRequest({
+        sessionId: "cs-nocache",
+        eventSequence: 1,
+        timestampMs: now,
+        costUsd: 0.021,
+        inputTokens: 1000,
+        outputTokens: 500,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 2000,
+      }),
+    ]);
+
+    const stats = await getOverviewStats(env.DB, "no-cache-test");
+    expect(stats.estimatedCacheSavings).toBeLessThanOrEqual(0);
+  });
+
+  it("全トークン0の場合は節約額0を返す（ゼロ除算回避）", async () => {
+    const now = Date.now();
+    await upsertSessions(env.DB, [
+      {
+        sessionId: "cs-zero",
+        repository: "zero-tokens-test",
+        timestampMs: now,
+      },
+    ]);
+    await insertApiRequests(env.DB, [
+      makeApiRequest({
+        sessionId: "cs-zero",
+        eventSequence: 1,
+        timestampMs: now,
+        costUsd: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 0,
+      }),
+    ]);
+
+    const stats = await getOverviewStats(env.DB, "zero-tokens-test");
+    expect(stats.estimatedCacheSavings).toBe(0);
+  });
+
+  it("repo フィルタ適用時はそのリポジトリのみ集計される", async () => {
+    const now = Date.now();
+    await upsertSessions(env.DB, [
+      { sessionId: "cs-repo-a", repository: "cs-repo-a", timestampMs: now },
+      { sessionId: "cs-repo-b", repository: "cs-repo-b", timestampMs: now },
+    ]);
+    await insertApiRequests(env.DB, [
+      makeApiRequest({
+        sessionId: "cs-repo-a",
+        eventSequence: 1,
+        timestampMs: now,
+        costUsd: 0.021,
+        inputTokens: 1000,
+        outputTokens: 500,
+        cacheReadTokens: 10000,
+        cacheCreationTokens: 2000,
+      }),
+      makeApiRequest({
+        sessionId: "cs-repo-b",
+        eventSequence: 1,
+        timestampMs: now,
+        costUsd: 0.05,
+        inputTokens: 2000,
+        outputTokens: 1000,
+        cacheReadTokens: 20000,
+        cacheCreationTokens: 0,
+      }),
+    ]);
+
+    const statsA = await getOverviewStats(env.DB, "cs-repo-a");
+    const statsB = await getOverviewStats(env.DB, "cs-repo-b");
+
+    // repo-a: savings = 0.021 * 8500 / 7000 ≈ 0.0255
+    expect(statsA.estimatedCacheSavings).toBeCloseTo(0.0255, 4);
+    // repo-b: savings = 0.05 * (0.9 * 20000) / (2000 + 0.1 * 20000 + 5 * 1000)
+    //       = 0.05 * 18000 / 9000 = 0.1
+    expect(statsB.estimatedCacheSavings).toBeCloseTo(0.1, 4);
+  });
+});
+
 describe("getDailyTokens", () => {
   it("日付ごとにトークン数を集計し降順で返す", async () => {
     const twoDaysAgo = daysAgoMs(2);

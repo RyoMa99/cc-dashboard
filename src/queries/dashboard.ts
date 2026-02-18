@@ -10,6 +10,7 @@ export type OverviewStats = {
   sessionCount: number;
   apiCallCount: number;
   errorCount: number;
+  estimatedCacheSavings: number;
 };
 
 export type DailyCostRow = {
@@ -89,7 +90,17 @@ export async function getOverviewStats(
 				COALESCE(SUM(a.output_tokens), 0) as total_output_tokens,
 				COALESCE(SUM(a.cache_read_tokens), 0) as total_cache_read_tokens,
 				COALESCE(SUM(a.cache_creation_tokens), 0) as total_cache_creation_tokens,
-				COUNT(*) as api_call_count
+				COUNT(*) as api_call_count,
+				COALESCE(SUM(
+					a.cost_usd
+					* (0.9 * a.cache_read_tokens - 0.25 * a.cache_creation_tokens)
+					/ NULLIF(
+						a.input_tokens
+						+ 0.1 * a.cache_read_tokens
+						+ 1.25 * a.cache_creation_tokens
+						+ 5.0 * a.output_tokens,
+					0)
+				), 0) as estimated_cache_savings
 			FROM api_requests a
 			${repoJoin.join}
 			WHERE 1=1 ${repoJoin.where}`,
@@ -122,6 +133,7 @@ export async function getOverviewStats(
     sessionCount: session.session_count,
     apiCallCount: cost.api_call_count,
     errorCount: error.error_count,
+    estimatedCacheSavings: cost.estimated_cache_savings,
   };
 }
 
