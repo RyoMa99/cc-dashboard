@@ -309,6 +309,76 @@ export async function getRepositoryCosts(
   }));
 }
 
+export type CostEfficiencyRow = {
+  model: string;
+  totalCost: number;
+  totalOutputTokens: number;
+  costPerOutputToken: number;
+  apiCallCount: number;
+};
+
+export async function getCostEfficiency(
+  db: D1Database,
+  repo?: RepoFilter,
+): Promise<CostEfficiencyRow[]> {
+  const repoJoin = buildRepoJoin(repo, "a");
+
+  const result = await db
+    .prepare(
+      `SELECT
+				a.model,
+				SUM(a.cost_usd) as total_cost,
+				SUM(a.output_tokens) as total_output_tokens,
+				COALESCE(SUM(a.cost_usd) / NULLIF(SUM(a.output_tokens), 0), 0) as cost_per_output_token,
+				COUNT(*) as api_call_count
+			FROM api_requests a
+			${repoJoin.join}
+			WHERE 1=1 ${repoJoin.where}
+			GROUP BY a.model
+			ORDER BY total_cost DESC`,
+    )
+    .bind(...repoJoin.binds)
+    .all();
+
+  return result.results.map((row) => ({
+    model: row.model as string,
+    totalCost: row.total_cost as number,
+    totalOutputTokens: row.total_output_tokens as number,
+    costPerOutputToken: row.cost_per_output_token as number,
+    apiCallCount: row.api_call_count as number,
+  }));
+}
+
+export type LinesOfCodeStats = {
+  linesAdded: number;
+  linesRemoved: number;
+};
+
+export async function getLinesOfCodeStats(
+  db: D1Database,
+  repo?: RepoFilter,
+): Promise<LinesOfCodeStats> {
+  const repoJoin = buildRepoJoin(repo, "m");
+
+  const result = await db
+    .prepare(
+      `SELECT
+				COALESCE(SUM(CASE WHEN m.attr_type = 'added' THEN m.value ELSE 0 END), 0) as lines_added,
+				COALESCE(SUM(CASE WHEN m.attr_type = 'removed' THEN m.value ELSE 0 END), 0) as lines_removed
+			FROM metric_data_points m
+			${repoJoin.join}
+			WHERE m.metric_name = 'claude_code.lines_of_code.count' ${repoJoin.where}`,
+    )
+    .bind(...repoJoin.binds)
+    .all();
+
+  const row = result.results[0] as Record<string, number> | undefined;
+  return {
+    linesAdded: row?.lines_added ?? 0,
+    linesRemoved: row?.lines_removed ?? 0,
+  };
+}
+
 export async function getDistinctRepositories(
   db: D1Database,
 ): Promise<string[]> {

@@ -22,6 +22,17 @@ export function formatDuration(firstMs: number, lastMs: number): string {
   return `${(diff / 3_600_000).toFixed(1)}h`;
 }
 
+export function formatPercent(ratio: number): string {
+  if (Number.isNaN(ratio)) return "N/A";
+  return `${(ratio * 100).toFixed(1)}%`;
+}
+
+export function formatCostPerToken(costPerToken: number): string {
+  if (Number.isNaN(costPerToken)) return "N/A";
+  const per1K = costPerToken * 1000;
+  return `$${per1K.toFixed(2)} / 1K tokens`;
+}
+
 export function formatDurationMs(ms: number): string {
   if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
   return `${Math.round(ms)}ms`;

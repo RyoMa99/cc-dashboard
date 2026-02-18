@@ -380,10 +380,31 @@ function generateSession(
     });
   }
 
+  // Lines of code metrics (at end of session)
+  const sessionEndTs = sessionStart + sessionDurationMs;
+  const linesAdded = randInt(10, 200);
+  const linesRemoved = randInt(0, 80);
+  const metricTs = sessionEndTs - randInt(0, 5000);
+  const metricTsNs = `${metricTs}000000`;
+
+  events.push({
+    table: "metric_data_points",
+    timestampMs: metricTs,
+    sql: `INSERT INTO metric_data_points (session_id, metric_name, value, timestamp_ns, timestamp_ms, attr_type, attr_model, attributes_json) VALUES (${sqlEscape(sessionId)}, 'claude_code.lines_of_code.count', ${linesAdded}, ${sqlEscape(metricTsNs)}, ${metricTs}, 'added', NULL, NULL);`,
+  });
+  events.push({
+    table: "metric_data_points",
+    timestampMs: metricTs + 1,
+    sql: `INSERT INTO metric_data_points (session_id, metric_name, value, timestamp_ns, timestamp_ms, attr_type, attr_model, attributes_json) VALUES (${sqlEscape(sessionId)}, 'claude_code.lines_of_code.count', ${linesRemoved}, ${sqlEscape(metricTsNs)}, ${metricTs}, 'removed', NULL, NULL);`,
+  });
+
   // Sort events by timestamp and assign event_sequence
   events.sort((a, b) => a.timestampMs - b.timestampMs);
-  for (let i = 0; i < events.length; i++) {
-    events[i].sql = events[i].sql.replace(/, NULL, /, `, ${i + 1}, `);
+  let seq = 1;
+  for (const event of events) {
+    // metric_data_points has no event_sequence column
+    if (event.table === "metric_data_points") continue;
+    event.sql = event.sql.replace(/, NULL, /, `, ${seq++}, `);
   }
 
   // Session record
@@ -409,6 +430,7 @@ function main() {
   lines.push("DELETE FROM tool_decisions;");
   lines.push("DELETE FROM tool_results;");
   lines.push("DELETE FROM user_prompts;");
+  lines.push("DELETE FROM metric_data_points;");
   lines.push("DELETE FROM api_requests;");
   lines.push("DELETE FROM sessions;");
   lines.push("");

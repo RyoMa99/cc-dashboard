@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { CostEfficiency } from "../components/CostEfficiency";
 import { DailyCosts } from "../components/DailyCosts";
 import { DailyTokens } from "../components/DailyTokens";
 import { Layout } from "../components/Layout";
@@ -9,9 +10,11 @@ import { RepositoryFilter } from "../components/RepositoryFilter";
 import { SessionTimeline } from "../components/SessionTimeline";
 import { ToolUsage } from "../components/ToolUsage";
 import {
+  getCostEfficiency,
   getDailyCosts,
   getDailyTokens,
   getDistinctRepositories,
+  getLinesOfCodeStats,
   getOverviewStats,
   getRecentSessions,
   getRepositoryCosts,
@@ -42,6 +45,8 @@ dashboard.get("/", async (c) => {
     sessions,
     repoCosts,
     repositories,
+    linesOfCode,
+    costEfficiency,
   ] = await Promise.all([
     getOverviewStats(c.env.DB, repoFilter),
     getDailyCosts(c.env.DB, 30, repoFilter),
@@ -50,6 +55,8 @@ dashboard.get("/", async (c) => {
     getRecentSessions(c.env.DB, 20, repoFilter),
     getRepositoryCosts(c.env.DB),
     getDistinctRepositories(c.env.DB),
+    getLinesOfCodeStats(c.env.DB, repoFilter),
+    getCostEfficiency(c.env.DB, repoFilter),
   ]);
 
   const hasUncategorized = repoCosts.some((r) => r.repository === "未分類");
@@ -61,7 +68,8 @@ dashboard.get("/", async (c) => {
         currentRepo={repoFilter}
         hasUncategorized={hasUncategorized}
       />
-      <Overview stats={stats} />
+      <Overview stats={stats} linesOfCode={linesOfCode} />
+      <CostEfficiency rows={costEfficiency} />
       {repoFilter === undefined && <RepositoryCosts rows={repoCosts} />}
       <DailyTokens rows={dailyTokens} />
       <DailyCosts rows={dailyCosts} />
