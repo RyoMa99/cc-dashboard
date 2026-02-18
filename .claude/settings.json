@@ -1,19 +1,16 @@
 {
-	"env": {
-		"OTEL_RESOURCE_ATTRIBUTES": "repository=cc-dashboard"
-	},
-	"hooks": {
-		"PostToolUse": [
-			{
-				"matcher": "Edit|Write",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/biome-fix.sh",
-						"timeout": 30
-					}
-				]
-			}
-		]
-	}
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/biome-fix.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
 }

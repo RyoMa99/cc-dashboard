@@ -2,7 +2,7 @@ import type { D1Migration } from "@cloudflare/vitest-pool-workers/config";
 import type { Bindings } from "../src/types/env";
 
 declare module "cloudflare:test" {
-	interface ProvidedEnv extends Bindings {
-		TEST_MIGRATIONS: D1Migration[];
-	}
+  interface ProvidedEnv extends Bindings {
+    TEST_MIGRATIONS: D1Migration[];
+  }
 }
