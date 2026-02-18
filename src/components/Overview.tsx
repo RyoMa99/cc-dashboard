@@ -1,5 +1,5 @@
-import { formatCost, formatTokens } from "../lib/format";
-import type { OverviewStats } from "../queries/dashboard";
+import { formatCost, formatPercent, formatTokens } from "../lib/format";
+import type { LinesOfCodeStats, OverviewStats } from "../queries/dashboard";
 
 function Card({
   label,
@@ -19,17 +19,41 @@ function Card({
   );
 }
 
-export function Overview({ stats }: { stats: OverviewStats }) {
+function computeROISub(
+  linesAdded: number,
+  totalCost: number,
+): string | undefined {
+  if (linesAdded <= 0) return undefined;
+  const costPerLine = totalCost / linesAdded;
+  return `$${costPerLine.toFixed(2)} / line`;
+}
+
+export function Overview({
+  stats,
+  linesOfCode,
+}: {
+  stats: OverviewStats;
+  linesOfCode?: LinesOfCodeStats;
+}) {
   const totalTokens =
     stats.totalInputTokens +
     stats.totalOutputTokens +
     stats.totalCacheReadTokens +
     stats.totalCacheCreationTokens;
 
+  const cacheHitRate =
+    stats.totalInputTokens > 0
+      ? stats.totalCacheReadTokens / stats.totalInputTokens
+      : Number.NaN;
+
+  const roiSub = linesOfCode
+    ? computeROISub(linesOfCode.linesAdded, stats.totalCost)
+    : undefined;
+
   return (
     <section>
       <h2 class="text-lg font-semibold mb-3">Overview</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Card label="Total Cost" value={formatCost(stats.totalCost)} />
         <Card
           label="Total Tokens"
@@ -42,6 +66,18 @@ export function Overview({ stats }: { stats: OverviewStats }) {
           value={String(stats.apiCallCount)}
           sub={stats.errorCount > 0 ? `${stats.errorCount} errors` : undefined}
         />
+        <Card
+          label="Cache Hit Rate"
+          value={formatPercent(cacheHitRate)}
+          sub={`${formatTokens(stats.totalCacheReadTokens)} cache read tokens`}
+        />
+        {linesOfCode && (
+          <Card
+            label="Lines Changed"
+            value={`+${linesOfCode.linesAdded} / -${linesOfCode.linesRemoved}`}
+            sub={roiSub}
+          />
+        )}
       </div>
     </section>
   );

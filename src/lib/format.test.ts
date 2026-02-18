@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   formatCost,
+  formatCostPerToken,
   formatDuration,
   formatDurationMs,
+  formatPercent,
   formatTime,
   formatTokens,
 } from "./format";
@@ -68,6 +70,38 @@ describe("formatDuration", () => {
     const first = 0;
     const last = 3_600_000;
     expect(formatDuration(first, last)).toBe("1.0h");
+  });
+});
+
+describe("formatPercent", () => {
+  it("比率をパーセンテージに変換する", () => {
+    expect(formatPercent(0.856)).toBe("85.6%");
+  });
+
+  it("0の場合", () => {
+    expect(formatPercent(0)).toBe("0.0%");
+  });
+
+  it("1の場合", () => {
+    expect(formatPercent(1)).toBe("100.0%");
+  });
+
+  it("NaNの場合はN/A", () => {
+    expect(formatPercent(Number.NaN)).toBe("N/A");
+  });
+});
+
+describe("formatCostPerToken", () => {
+  it("1Kトークンあたりのコストを表示する", () => {
+    expect(formatCostPerToken(0.00012)).toBe("$0.12 / 1K tokens");
+  });
+
+  it("0の場合", () => {
+    expect(formatCostPerToken(0)).toBe("$0.00 / 1K tokens");
+  });
+
+  it("NaNの場合はN/A", () => {
+    expect(formatCostPerToken(Number.NaN)).toBe("N/A");
   });
 });
 

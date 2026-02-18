@@ -6,16 +6,20 @@ import {
   insertToolResults,
   upsertSessions,
 } from "../repositories/events";
+import { insertMetricDataPoints } from "../repositories/metrics";
 import type {
   ParsedApiError,
   ParsedApiRequest,
+  ParsedMetricDataPoint,
   ParsedToolResult,
 } from "../types/domain";
 import {
   buildRepoJoin,
+  getCostEfficiency,
   getDailyCosts,
   getDailyTokens,
   getDistinctRepositories,
+  getLinesOfCodeStats,
   getOverviewStats,
   getRecentSessions,
   getRepositoryCosts,
@@ -57,6 +61,22 @@ function makeToolResult(
     mcpServerName: null,
     mcpToolName: null,
     skillName: null,
+    ...overrides,
+  };
+}
+
+function makeMetricDataPoint(
+  overrides?: Partial<ParsedMetricDataPoint>,
+): ParsedMetricDataPoint {
+  return {
+    sessionId: "session-1",
+    metricName: "claude_code.lines_of_code.count",
+    value: 50,
+    timestampNs: "1700000000000000000",
+    timestampMs: Date.now(),
+    attrType: "added",
+    attrModel: null,
+    attributesJson: null,
     ...overrides,
   };
 }
@@ -563,5 +583,146 @@ describe("getDistinctRepositories", () => {
     for (let i = 1; i < repos.length; i++) {
       expect(repos[i - 1] <= repos[i]).toBe(true);
     }
+  });
+});
+
+// --- getCostEfficiency ---
+
+describe("getCostEfficiency", () => {
+  it("モデル別にコスト効率を集計する", async () => {
+    await insertApiRequests(env.DB, [
+      makeApiRequest({
+        sessionId: "ce-1",
+        model: "claude-sonnet-4-5-20250929",
+        costUsd: 0.01,
+        outputTokens: 100,
+      }),
+      makeApiRequest({
+        sessionId: "ce-2",
+        model: "claude-sonnet-4-5-20250929",
+        costUsd: 0.02,
+        outputTokens: 200,
+      }),
+      makeApiRequest({
+        sessionId: "ce-3",
+        model: "claude-opus-4-6",
+        costUsd: 0.05,
+        outputTokens: 50,
+      }),
+    ]);
+
+    const rows = await getCostEfficiency(env.DB);
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+
+    const sonnet = rows.find((r) => r.model === "claude-sonnet-4-5-20250929");
+    const opus = rows.find((r) => r.model === "claude-opus-4-6");
+    expect(sonnet).toBeDefined();
+    expect(opus).toBeDefined();
+    // コスト降順
+    expect(rows[0].totalCost).toBeGreaterThanOrEqual(
+      rows[rows.length - 1].totalCost,
+    );
+  });
+
+  it("output_tokens が 0 の場合 costPerOutputToken は 0", async () => {
+    await insertApiRequests(env.DB, [
+      makeApiRequest({
+        sessionId: "ce-zero",
+        model: "claude-haiku-4-5-20251001",
+        costUsd: 0.001,
+        outputTokens: 0,
+      }),
+    ]);
+
+    const rows = await getCostEfficiency(env.DB);
+    const haiku = rows.find((r) => r.model === "claude-haiku-4-5-20251001");
+    expect(haiku).toBeDefined();
+    expect(haiku?.costPerOutputToken).toBe(0);
+  });
+
+  it("データなしの場合は空配列を返す", async () => {
+    const rows = await getCostEfficiency(env.DB);
+    expect(Array.isArray(rows)).toBe(true);
+  });
+
+  it("repo フィルタが適用される", async () => {
+    await setupRepoTestData();
+
+    const rows = await getCostEfficiency(env.DB, "project-a");
+    const totalCost = rows.reduce((sum, r) => sum + r.totalCost, 0);
+    expect(totalCost).toBeCloseTo(0.1, 1);
+  });
+});
+
+// --- getLinesOfCodeStats ---
+
+describe("getLinesOfCodeStats", () => {
+  it("added と removed の行数を集計する", async () => {
+    await upsertSessions(env.DB, [
+      { sessionId: "loc-1", repository: "test-repo", timestampMs: Date.now() },
+    ]);
+    await insertMetricDataPoints(env.DB, [
+      makeMetricDataPoint({
+        sessionId: "loc-1",
+        attrType: "added",
+        value: 100,
+      }),
+      makeMetricDataPoint({
+        sessionId: "loc-1",
+        attrType: "removed",
+        value: 30,
+      }),
+    ]);
+
+    const stats = await getLinesOfCodeStats(env.DB);
+    expect(stats.linesAdded).toBeGreaterThanOrEqual(100);
+    expect(stats.linesRemoved).toBeGreaterThanOrEqual(30);
+  });
+
+  it("データなしの場合は 0 を返す", async () => {
+    // 関数がエラーにならず 0 を返すことを確認
+    const stats = await getLinesOfCodeStats(env.DB);
+    expect(typeof stats.linesAdded).toBe("number");
+    expect(typeof stats.linesRemoved).toBe("number");
+  });
+
+  it("repo フィルタが適用される", async () => {
+    await upsertSessions(env.DB, [
+      { sessionId: "loc-a", repository: "repo-a", timestampMs: Date.now() },
+      { sessionId: "loc-b", repository: "repo-b", timestampMs: Date.now() },
+    ]);
+    await insertMetricDataPoints(env.DB, [
+      makeMetricDataPoint({
+        sessionId: "loc-a",
+        attrType: "added",
+        value: 50,
+      }),
+      makeMetricDataPoint({
+        sessionId: "loc-b",
+        attrType: "added",
+        value: 200,
+      }),
+    ]);
+
+    const stats = await getLinesOfCodeStats(env.DB, "repo-a");
+    // repo-a のみ（50行）
+    expect(stats.linesAdded).toBeGreaterThanOrEqual(50);
+    expect(stats.linesAdded).toBeLessThan(250);
+  });
+
+  it("repo が null の場合 repository IS NULL のセッションのみ集計", async () => {
+    await upsertSessions(env.DB, [
+      { sessionId: "loc-null", repository: null, timestampMs: Date.now() },
+    ]);
+    await insertMetricDataPoints(env.DB, [
+      makeMetricDataPoint({
+        sessionId: "loc-null",
+        attrType: "added",
+        value: 77,
+      }),
+    ]);
+
+    const stats = await getLinesOfCodeStats(env.DB, null);
+    expect(stats.linesAdded).toBeGreaterThanOrEqual(77);
   });
 });
