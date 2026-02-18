@@ -59,7 +59,15 @@ export function Overview({
     <section>
       <h2 class="text-lg font-semibold mb-3">Overview</h2>
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <Card label="Total Cost" value={formatCost(stats.totalCost)} />
+        <Card
+          label="Total Cost"
+          value={formatCost(stats.totalCost)}
+          sub={
+            stats.estimatedCacheSavings > 0
+              ? `Saved ${formatCost(stats.estimatedCacheSavings)} by caching`
+              : undefined
+          }
+        />
         <Card
           label="Total Tokens"
           value={formatTokens(totalTokens)}
