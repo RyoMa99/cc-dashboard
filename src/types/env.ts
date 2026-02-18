@@ -1,4 +1,4 @@
 export type Bindings = {
-	DB: D1Database;
-	AUTH_TOKEN: string;
+  DB: D1Database;
+  AUTH_TOKEN: string;
 };
