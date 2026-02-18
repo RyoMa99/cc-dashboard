@@ -1,7 +1,4 @@
 {
-	"env": {
-		"OTEL_RESOURCE_ATTRIBUTES": "repository=cc-dashboard"
-	},
 	"hooks": {
 		"PostToolUse": [
 			{
