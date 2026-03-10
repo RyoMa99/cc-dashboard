@@ -16,7 +16,7 @@
     "db:seed": "tsx scripts/seed.ts && wrangler d1 execute cc-dashboard-db --local --file=scripts/.seed.sql"
   },
   "dependencies": {
-    "hono": "^4.12.3"
+    "hono": "^4.12.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -26,12 +26,12 @@
     ]
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.5",
-    "@cloudflare/vitest-pool-workers": "^0.12.18",
-    "@cloudflare/workers-types": "^4.20260305.0",
+    "@biomejs/biome": "^2.4.6",
+    "@cloudflare/vitest-pool-workers": "^0.12.20",
+    "@cloudflare/workers-types": "^4.20260310.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^3.0.0",
-    "wrangler": "^4.69.0"
+    "wrangler": "^4.71.0"
   }
 }
